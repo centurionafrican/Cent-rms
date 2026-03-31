@@ -1,11 +1,13 @@
 import { neon } from "@neondatabase/serverless"
 
-// RMSDatabase (cold-violet-43459769) — hardcoded fallback so the app always
-// connects to the correct database even when DATABASE_URL env var is missing.
-const RMSDATABASE_URL =
-  "postgresql://neondb_owner:npg_EpDi7qcY0Lzm@ep-curly-scene-ahbel7ny-pooler.c-3.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require"
+// RMSDatabase connection — always use this project (cold-violet-43459769)
+// regardless of what DATABASE_URL env var is set to.
+const connectionString =
+  process.env.DATABASE_URL && process.env.DATABASE_URL.includes("cold-violet-43459769")
+    ? process.env.DATABASE_URL
+    : "postgresql://neondb_owner:npg_EpDi7qcY0Lzm@ep-curly-scene-ahbel7ny-pooler.c-3.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require"
 
-export const sql = neon(process.env.DATABASE_URL || RMSDATABASE_URL)
+export const sql = neon(connectionString)
 
 export type User = {
   id: number
