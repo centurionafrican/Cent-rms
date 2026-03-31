@@ -5,14 +5,7 @@ import { neon } from "@neondatabase/serverless"
 const RMSDATABASE_URL =
   "postgresql://neondb_owner:npg_EpDi7qcY0Lzm@ep-curly-scene-ahbel7ny-pooler.c-3.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require"
 
-let _sql: ReturnType<typeof neon> | null = null
-
-export function sql(strings: TemplateStringsArray, ...values: unknown[]) {
-  if (!_sql) {
-    _sql = neon(process.env.DATABASE_URL || RMSDATABASE_URL)
-  }
-  return _sql(strings, ...values)
-}
+export const sql = neon(process.env.DATABASE_URL || RMSDATABASE_URL)
 
 export type User = {
   id: number
@@ -156,7 +149,6 @@ export const ROLE_PERMISSIONS: Record<string, Record<string, boolean>> = {
     canDelete: false,
     canApproveLeaves: true,
     canAccessSystemUsers: false,
-    approvalLevel: "final", // Co-CEO final approval
   },
   roster_manager: {
     canAdd: true,
@@ -171,7 +163,6 @@ export const ROLE_PERMISSIONS: Record<string, Record<string, boolean>> = {
     canDelete: false,
     canApproveLeaves: true,
     canAccessSystemUsers: false,
-    approvalLevel: "first", // Operations Manager first approval
   },
   hr: {
     canAdd: false,
@@ -179,7 +170,6 @@ export const ROLE_PERMISSIONS: Record<string, Record<string, boolean>> = {
     canDelete: false,
     canApproveLeaves: true,
     canAccessSystemUsers: false,
-    approvalLevel: "second", // HR second approval
   },
   coordinator: {
     canAdd: false,
@@ -250,7 +240,6 @@ export type Assignment = {
   reliever_id: number | null
   notes: string | null
   created_at: string
-  // Joined fields
   guard_name?: string
   site_name?: string
   shift_name?: string
