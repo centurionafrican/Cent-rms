@@ -1,13 +1,15 @@
 import { neon } from "@neondatabase/serverless"
 
+// RMSDatabase (cold-violet-43459769) — primary connection
+const RMSDATABASE_URL =
+  "postgresql://neondb_owner:npg_EpDi7qcY0Lzm@ep-curly-scene-ahbel7ny-pooler.c-3.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require"
+
 let _sql: ReturnType<typeof neon> | null = null
 
 export function sql(strings: TemplateStringsArray, ...values: unknown[]) {
   if (!_sql) {
-    if (!process.env.DATABASE_URL) {
-      throw new Error("DATABASE_URL environment variable is not set. Please add it in the Vars section of the sidebar.")
-    }
-    _sql = neon(process.env.DATABASE_URL)
+    const connectionString = process.env.DATABASE_URL || RMSDATABASE_URL
+    _sql = neon(connectionString)
   }
   return _sql(strings, ...values)
 }
