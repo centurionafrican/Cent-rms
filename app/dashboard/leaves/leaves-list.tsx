@@ -39,7 +39,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, CalendarX, Search, Check, X, Clock, CircleCheck, CircleX, Trash2 } from "lucide-react"
+import { Plus, CalendarX, Search, Check, X, Clock, CircleCheck, CircleX, Trash2, Info } from "lucide-react"
+import { countWorkingDays } from "@/lib/working-days"
 
 interface LeaveRequest {
   id: number
@@ -239,10 +240,7 @@ export function LeavesList({ initialLeaves, guards, currentUserId, currentUserRo
   }
 
   function getDays(start: string, end: string) {
-    const startDate = new Date(start)
-    const endDate = new Date(end)
-    const diff = endDate.getTime() - startDate.getTime()
-    return Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1
+    return countWorkingDays(start, end)
   }
 
   // Determine what step the user can approve based on their role
@@ -356,6 +354,17 @@ export function LeavesList({ initialLeaves, guards, currentUserId, currentUserRo
                   <Input type="date" value={formData.end_date} onChange={(e) => setFormData({ ...formData, end_date: e.target.value })} />
                 </div>
               </div>
+              {formData.start_date && formData.end_date && formData.end_date >= formData.start_date && (
+                <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm">
+                  <Info className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">
+                    Working days (excl. weekends &amp; public holidays):{" "}
+                    <strong className="text-foreground">
+                      {countWorkingDays(formData.start_date, formData.end_date)} day{countWorkingDays(formData.start_date, formData.end_date) !== 1 ? "s" : ""}
+                    </strong>
+                  </span>
+                </div>
+              )}
               <div className="grid gap-2">
                 <Label>Reason</Label>
                 <Textarea value={formData.reason} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} placeholder="Reason for leave..." rows={3} />
@@ -394,7 +403,7 @@ export function LeavesList({ initialLeaves, guards, currentUserId, currentUserRo
                 <TableHead>Employee</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Duration</TableHead>
-                <TableHead>Days</TableHead>
+                <TableHead>Working Days</TableHead>
                 <TableHead>Ops Manager</TableHead>
                 <TableHead>HR</TableHead>
                 <TableHead>Co-CEO</TableHead>
