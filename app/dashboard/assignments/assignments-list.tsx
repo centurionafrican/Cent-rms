@@ -400,6 +400,19 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
     }
   }
 
+  async function deleteAssignment(id: number) {
+    try {
+      const res = await fetch(`/api/assignments/${id}`, {
+        method: "DELETE",
+      })
+      if (res.ok) {
+        setAssignments((prev) => prev.filter((a) => a.id !== id))
+      }
+    } catch (error) {
+      console.error("Failed to delete assignment:", error)
+    }
+  }
+
   async function handleAddReliever() {
     if (!selectedAssignment || !relieverId) return
     setLoading(true)
@@ -1689,24 +1702,54 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                           </Select>
                         </TableCell>
                         <TableCell>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
+                          <div className="flex items-center gap-2">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-blue-600 hover:text-blue-700 border-blue-200"
+                                    onClick={() => {
+                                      setSelectedAssignment(assignment)
+                                      setIsRelieverDialogOpen(true)
+                                    }}
+                                  >
+                                    <UserPlus className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Set Reliever</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="text-blue-600 hover:text-blue-700 border-blue-200"
-                                  onClick={() => {
-                                    setSelectedAssignment(assignment)
-                                    setIsRelieverDialogOpen(true)
-                                  }}
+                                  className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
                                 >
-                                  <UserPlus className="h-4 w-4" />
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Set Reliever</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Assignment?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently delete the assignment for {assignment.guard_name} at {assignment.site_name} on {new Date(assignment.date).toLocaleDateString()}. This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteAssignment(assignment.id)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
