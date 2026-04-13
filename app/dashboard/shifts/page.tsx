@@ -295,7 +295,7 @@ export default function ShiftsPage() {
               <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Day Shift" />
             </div>
             <div className="space-y-2">
-              <Label>Shift Type (for Thursday Rotation)</Label>
+              <Label>Shift Type </Label>
               <Select value={formData.shift_type} onValueChange={(v: "day" | "night") => setFormData({ ...formData, shift_type: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
