@@ -232,7 +232,7 @@ export default function SitesPage() {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Guards Needed per Shift</Label>
+          <Label>Guards Needed</Label>
           <Input type="number" min="1" value={formData.guards_needed} onChange={(e) => setFormData({ ...formData, guards_needed: e.target.value })} />
         </div>
       </div>
