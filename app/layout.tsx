@@ -8,9 +8,9 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'SecureGuard RMS - Roster Management System',
+  title: 'Roster Management System',
   description: 'Security company roster management system for shift scheduling, time-off requests, and employee management',
-  generator: 'v0.app',
+  generator: '',
   icons: {
     icon: [
       {
