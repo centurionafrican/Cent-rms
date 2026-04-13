@@ -11,15 +11,7 @@ export const metadata: Metadata = {
   title: 'Roster Management System',
   description: 'Security company roster management system for shift scheduling, time-off requests, and employee management',
   generator: '',
-  icons: {
-    icon: [
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
-  },
+
 }
 
 export default function RootLayout({
