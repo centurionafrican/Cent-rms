@@ -142,7 +142,7 @@ const special_skills = row["special_skills"]
             ${gender}, ${education_level}, ${discipline}, ${maternity_status},
             ${languages_spoken}, ${special_skills}
           )
-          ON CONFLICT (email) DO NOTHING
+          ON CONFLICT (id_number) DO NOTHING
         `
         imported.push(`${first_name} ${last_name}`)
       } catch (err) {
