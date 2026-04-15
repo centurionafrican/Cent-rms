@@ -120,12 +120,13 @@ export async function POST(request: Request) {
 
       const annual_leave_days = Number.parseInt(row["annual_leave_days"] || "21") || 21
 
-      const languages_spoken = row["languages_spoken"]
-        ? JSON.stringify(row["languages_spoken"].split("|").map((v) => v.trim()).filter(Boolean))
-        : JSON.stringify([])
-      const special_skills = row["special_skills"]
-        ? JSON.stringify(row["special_skills"].split("|").map((v) => v.trim()).filter(Boolean))
-        : JSON.stringify([])
+const languages_spoken = row["languages_spoken"]
+  ? row["languages_spoken"].split("|").map((v) => v.trim()).filter(Boolean)
+  : []
+
+const special_skills = row["special_skills"]
+  ? row["special_skills"].split("|").map((v) => v.trim()).filter(Boolean)
+  : []
 
       try {
         await sql`
