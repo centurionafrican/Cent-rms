@@ -107,7 +107,17 @@ export async function POST(request: Request) {
       const education_level = row["education_level"] || null
       const discipline = row["discipline"] || "Excellent"
       const maternity_status = row["maternity_status"] || "Not Applicable"
-      const date_joined = row["date_joined"] || new Date().toISOString().split("T")[0]
+            
+      // Convert Excel serial date to ISO date string if needed
+      let date_joined = row["date_joined"] || new Date().toISOString().split("T")[0]
+      const dateNum = Number(date_joined)
+      if (!isNaN(dateNum) && dateNum > 0) {
+        // Excel serial number: days since 1900-01-01 (accounting for leap year bug)
+        const excelDate = new Date((dateNum - 1) * 86400000 + new Date(1900, 0, 1).getTime())
+        date_joined = excelDate.toISOString().split("T")[0]
+      }
+      
+
       const annual_leave_days = Number.parseInt(row["annual_leave_days"] || "21") || 21
 
       const languages_spoken = row["languages_spoken"]
