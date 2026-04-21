@@ -30,11 +30,13 @@ export async function POST(request: Request) {
 
     // Set the session cookie using the token returned by loginUser
     if (result.token) {
-      console.log("[v0] Setting cookie in response with token:", result.token.substring(0, 8) + "...")
-      response.cookies.set("session_id", result.token, {
+      const isProduction = process.env.NODE_ENV === "production"
+      response.cookies.set({
+        name: "session_id",
+        value: result.token,
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        secure: isProduction,
+        sameSite: isProduction ? "strict" : "lax",
         maxAge: 7 * 24 * 60 * 60,
         path: "/",
       })
@@ -42,7 +44,7 @@ export async function POST(request: Request) {
 
     return response
   } catch (error) {
-    console.error("[v0] Login error:", error)
+    console.error("Login error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
