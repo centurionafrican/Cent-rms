@@ -31,20 +31,12 @@ export async function POST(request: Request) {
     // Set the session cookie in the response
     if (result.token) {
       const isProduction = process.env.NODE_ENV === "production"
-      // Force secure to false in development
-      const secure = isProduction ? true : false
       
-      response.cookies.set({
-        name: "session_id",
-        value: result.token,
-        httpOnly: true,
-        secure: secure,
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60,
-        path: "/",
-      })
+      // Build the Set-Cookie header manually
+      const cookieValue = `session_id=${result.token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}${isProduction ? '; Secure' : ''}`
       
-      console.log("[v0] Cookie set - secure:", secure, "token:", result.token.substring(0, 8) + "...")
+      response.headers.set("Set-Cookie", cookieValue)
+      console.log("[v0] Set-Cookie header:", cookieValue.substring(0, 50) + "...")
     }
 
     return response
