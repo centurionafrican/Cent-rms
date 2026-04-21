@@ -27,6 +27,7 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        credentials: "include",
       })
 
       const data = await res.json()
@@ -36,8 +37,11 @@ export default function LoginPage() {
         return
       }
 
-      router.push("/dashboard")
+      // Wait a small moment to ensure cookie is set before redirecting
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
       router.refresh()
+      router.push("/dashboard")
     } catch {
       setError("An error occurred")
     } finally {

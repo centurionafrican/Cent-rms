@@ -6,15 +6,23 @@ export async function getSession(): Promise<User | null> {
   const cookieStore = await cookies()
   const token = cookieStore.get("session_id")?.value
 
+  console.log("[v0] Session token from cookie:", token ? "present" : "missing")
+
   if (!token) return null
 
-  const sessions = await sql`
-    SELECT u.* FROM users u
-    JOIN sessions s ON s.user_id = u.id
-    WHERE s.token = ${token} AND s.expires_at > NOW()
-  `
+  try {
+    const sessions = await sql`
+      SELECT u.* FROM users u
+      JOIN sessions s ON s.user_id = u.id
+      WHERE s.token = ${token} AND s.expires_at > NOW()
+    `
 
-  return sessions.length > 0 ? (sessions[0] as User) : null
+    console.log("[v0] Session query result:", sessions.length > 0 ? "found" : "not found")
+    return sessions.length > 0 ? (sessions[0] as User) : null
+  } catch (error) {
+    console.error("[v0] Session query error:", error)
+    return null
+  }
 }
 
 export async function createSession(userId: number): Promise<string> {
