@@ -6,7 +6,12 @@ export async function getSession(): Promise<User | null> {
   const cookieStore = await cookies()
   const token = cookieStore.get("session_id")?.value
 
-  if (!token) return null
+  console.log("[v0] getSession() - token present:", !!token)
+
+  if (!token) {
+    console.log("[v0] getSession() - no token found, all cookies:", cookieStore.getAll().map(c => c.name))
+    return null
+  }
 
   try {
     const sessions = await sql`
@@ -15,6 +20,7 @@ export async function getSession(): Promise<User | null> {
       WHERE s.token = ${token} AND s.expires_at > NOW()
     `
 
+    console.log("[v0] getSession() - query found:", sessions.length, "sessions")
     return sessions.length > 0 ? (sessions[0] as User) : null
   } catch (error) {
     console.error("[v0] Session query error:", error)
