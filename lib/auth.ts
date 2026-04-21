@@ -1,15 +1,22 @@
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { sql, type User } from "./db"
 import bcrypt from "bcryptjs"
 
 export async function getSession(): Promise<User | null> {
+  // Try to get token from cookies first
   const cookieStore = await cookies()
-  const token = cookieStore.get("session_id")?.value
+  let token = cookieStore.get("session_id")?.value
 
-  console.log("[v0] getSession() - token present:", !!token)
+  // If no cookie, try to get token from Authorization header
+  if (!token) {
+    const headerList = await headers()
+    const authHeader = headerList.get("authorization")
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.slice(7)
+    }
+  }
 
   if (!token) {
-    console.log("[v0] getSession() - no token found, all cookies:", cookieStore.getAll().map(c => c.name))
     return null
   }
 
@@ -20,7 +27,6 @@ export async function getSession(): Promise<User | null> {
       WHERE s.token = ${token} AND s.expires_at > NOW()
     `
 
-    console.log("[v0] getSession() - query found:", sessions.length, "sessions")
     return sessions.length > 0 ? (sessions[0] as User) : null
   } catch (error) {
     console.error("[v0] Session query error:", error)

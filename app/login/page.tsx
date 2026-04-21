@@ -37,7 +37,12 @@ export default function LoginPage() {
         return
       }
 
-      // Wait a small moment to ensure cookie is set before redirecting
+      // Store the token in sessionStorage
+      if (data.token) {
+        sessionStorage.setItem("session_token", data.token)
+      }
+
+      // Wait a small moment before redirecting
       await new Promise(resolve => setTimeout(resolve, 100))
       
       router.refresh()
