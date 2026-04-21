@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: result.error }, { status: 401 })
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: {
         id: result.user!.id,
@@ -27,8 +27,22 @@ export async function POST(request: Request) {
         role: result.user!.role,
       },
     })
+
+    // Set the session cookie using the token returned by loginUser
+    if (result.token) {
+      console.log("[v0] Setting cookie in response with token:", result.token.substring(0, 8) + "...")
+      response.cookies.set("session_id", result.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60,
+        path: "/",
+      })
+    }
+
+    return response
   } catch (error) {
-    console.error("Login error:", error)
+    console.error("[v0] Login error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
