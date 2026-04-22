@@ -22,7 +22,6 @@ export function middleware(request: NextRequest) {
       secure: false,
     })
     
-    console.log("[v0] Middleware set cookie for token:", token.substring(0, 8) + "...")
     return response
   }
   
