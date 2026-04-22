@@ -18,11 +18,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: result.error }, { status: 401 })
     }
 
-    // Return the token and redirect URL for client-side navigation
-    // The middleware will pick up the token and set it as a cookie
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
-      redirectUrl: result.token ? `/dashboard?auth_token=${result.token}` : null,
       user: {
         id: result.user!.id,
         email: result.user!.email,
@@ -30,8 +27,6 @@ export async function POST(request: Request) {
         role: result.user!.role,
       },
     })
-
-    return response
   } catch (error) {
     console.error("Login error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

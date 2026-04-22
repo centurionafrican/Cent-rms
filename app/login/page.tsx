@@ -27,7 +27,6 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-        credentials: "include",
       })
 
       const data = await res.json()
@@ -37,11 +36,8 @@ export default function LoginPage() {
         return
       }
 
-      // Use the redirect URL from the API response which includes the token
-      if (data.redirectUrl) {
-        await new Promise(resolve => setTimeout(resolve, 100))
-        router.push(data.redirectUrl)
-      }
+      router.push("/dashboard")
+      router.refresh()
     } catch {
       setError("An error occurred")
     } finally {

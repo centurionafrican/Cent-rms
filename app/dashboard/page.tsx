@@ -81,6 +81,9 @@ async function getGuardsWithStatus() {
 }
 
 export default async function DashboardPage() {
+  const user = await getSession()
+  if (!user) return null
+
   const stats = await getDashboardStats()
   const guards = await getGuardsWithStatus()
 

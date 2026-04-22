@@ -6,37 +6,25 @@ export async function getSession(): Promise<User | null> {
   const cookieStore = await cookies()
   const token = cookieStore.get("session_id")?.value
 
-  if (!token) {
-    return null
-  }
+  if (!token) return null
 
-  try {
-    const sessions = await sql`
-      SELECT u.* FROM users u
-      JOIN sessions s ON s.user_id = u.id
-      WHERE s.token = ${token} AND s.expires_at > NOW()
-    `
+  const sessions = await sql`
+    SELECT u.* FROM users u
+    JOIN sessions s ON s.user_id = u.id
+    WHERE s.token = ${token} AND s.expires_at > NOW()
+  `
 
-    return sessions.length > 0 ? (sessions[0] as User) : null
-  } catch (error) {
-    console.error("[v0] Session query error:", error)
-    return null
-  }
+  return sessions.length > 0 ? (sessions[0] as User) : null
 }
 
 export async function createSession(userId: number): Promise<string> {
   const token = crypto.randomUUID()
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
-  try {
-    await sql`
-      INSERT INTO sessions (token, user_id, expires_at)
-      VALUES (${token}, ${userId}, ${expiresAt.toISOString()})
-    `
-  } catch (error) {
-    console.error("[v0] Session creation failed:", error)
-    throw error
-  }
+  await sql`
+    INSERT INTO sessions (token, user_id, expires_at)
+    VALUES (${token}, ${userId}, ${expiresAt.toISOString()})
+  `
 
   return token
 }
@@ -55,7 +43,7 @@ export async function destroySession(): Promise<void> {
 export async function loginUser(
   email: string,
   password: string
-): Promise<{ success: boolean; error?: string; user?: User; token?: string }> {
+): Promise<{ success: boolean; error?: string; user?: User }> {
   const users = await sql`
     SELECT * FROM users WHERE LOWER(email) = LOWER(${email})
   `
@@ -72,13 +60,23 @@ export async function loginUser(
     return { success: false, error: "Invalid email or password" }
   }
 
-  // Create session and return token for Route Handler to set as cookie
+  // Create session
   const sessionId = await createSession(user.id)
 
   // Update last login
   await sql`UPDATE users SET last_login = NOW() WHERE id = ${user.id}`
 
-  return { success: true, user, token: sessionId }
+  // Set cookie
+  const cookieStore = await cookies()
+  cookieStore.set("session_id", sessionId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60,
+    path: "/",
+  })
+
+  return { success: true, user }
 }
 
 export async function requireAuth(): Promise<User> {
