@@ -5,7 +5,7 @@ import { DashboardSidebar } from "./sidebar"
 import { DashboardHeader } from "./header"
 import type { User } from "@/lib/db"
 
-export function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
+function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -43,3 +43,5 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
     </div>
   )
 }
+
+export { DashboardLayoutClient }
