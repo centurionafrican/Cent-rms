@@ -37,9 +37,10 @@ export default function LoginPage() {
         return
       }
 
-      // Store the token in sessionStorage
+      // Store the token and user data in sessionStorage
       if (data.token) {
         sessionStorage.setItem("session_token", data.token)
+        sessionStorage.setItem("user", JSON.stringify(data.user))
       }
 
       // Wait a small moment before redirecting
