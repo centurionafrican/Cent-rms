@@ -1,20 +1,10 @@
-import { cookies, headers } from "next/headers"
+import { cookies } from "next/headers"
 import { sql, type User } from "./db"
 import bcrypt from "bcryptjs"
 
 export async function getSession(): Promise<User | null> {
-  // Try to get token from cookies first
   const cookieStore = await cookies()
-  let token = cookieStore.get("session_id")?.value
-
-  // If no cookie, try to get token from Authorization header
-  if (!token) {
-    const headerList = await headers()
-    const authHeader = headerList.get("authorization")
-    if (authHeader?.startsWith("Bearer ")) {
-      token = authHeader.slice(7)
-    }
-  }
+  const token = cookieStore.get("session_id")?.value
 
   if (!token) {
     return null

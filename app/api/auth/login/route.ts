@@ -40,7 +40,6 @@ export async function POST(request: Request) {
         sameSite: "lax",
         secure: false, // Allow in development
       })
-      console.log("[v0] Cookie set via response.cookies")
     }
 
     return response

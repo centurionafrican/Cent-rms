@@ -1,17 +1,29 @@
 import React from "react"
-import { AuthWrapper } from '@/components/auth-wrapper'
-import { DashboardLayoutClient } from '@/components/dashboard/layout-client'
+import { getSession } from '@/lib/auth'
+import { redirect } from 'next/navigation'
+import { DashboardSidebar } from '@/components/dashboard/sidebar'
+import { DashboardHeader } from '@/components/dashboard/header'
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const user = await getSession()
+
+  if (!user) {
+    redirect('/login')
+  }
+
   return (
-    <AuthWrapper>
-      <DashboardLayoutClient>
-        {children}
-      </DashboardLayoutClient>
-    </AuthWrapper>
+    <div className="min-h-screen bg-muted/30">
+      <DashboardSidebar user={user} />
+      <div className="lg:pl-64">
+        <DashboardHeader user={user} />
+        <main className="p-6">
+          {children}
+        </main>
+      </div>
+    </div>
   )
 }

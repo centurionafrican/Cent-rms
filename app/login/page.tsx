@@ -37,16 +37,8 @@ export default function LoginPage() {
         return
       }
 
-      // Store the token and user data in sessionStorage
-      if (data.token) {
-        sessionStorage.setItem("session_token", data.token)
-        sessionStorage.setItem("user", JSON.stringify(data.user))
-      }
-
-      // Wait a small moment before redirecting
+      // Cookie is set by the API response, now redirect to dashboard
       await new Promise(resolve => setTimeout(resolve, 100))
-      
-      router.refresh()
       router.push("/dashboard")
     } catch {
       setError("An error occurred")
