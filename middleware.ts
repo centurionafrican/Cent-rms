@@ -6,9 +6,12 @@ export function middleware(request: NextRequest) {
   const url = request.nextUrl
   const token = url.searchParams.get('auth_token')
   
-  const response = NextResponse.next()
-  
   if (token) {
+    // Remove token from URL to keep it clean
+    url.searchParams.delete('auth_token')
+    const response = NextResponse.rewrite(url)
+    
+    // Set the session cookie in the response
     response.cookies.set({
       name: 'session_id',
       value: token,
@@ -19,12 +22,11 @@ export function middleware(request: NextRequest) {
       secure: false,
     })
     
-    // Remove the token from the URL
-    url.searchParams.delete('auth_token')
-    return NextResponse.redirect(url, response)
+    console.log("[v0] Middleware set cookie for token:", token.substring(0, 8) + "...")
+    return response
   }
   
-  return response
+  return NextResponse.next()
 }
 
 export const config = {
