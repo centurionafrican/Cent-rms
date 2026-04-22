@@ -37,9 +37,11 @@ export default function LoginPage() {
         return
       }
 
-      // Cookie is set by the API response, now redirect to dashboard
-      await new Promise(resolve => setTimeout(resolve, 100))
-      router.push("/dashboard")
+      // Use the redirect URL from the API response which includes the token
+      if (data.redirectUrl) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+        router.push(data.redirectUrl)
+      }
     } catch {
       setError("An error occurred")
     } finally {
