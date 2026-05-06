@@ -44,19 +44,26 @@ export async function loginUser(
   email: string,
   password: string
 ): Promise<{ success: boolean; error?: string; user?: User }> {
+  console.log("[v0] Login attempt for email:", email)
   const users = await sql`
     SELECT * FROM users WHERE LOWER(email) = LOWER(${email})
   `
 
+  console.log("[v0] Users found:", users.length)
   if (users.length === 0) {
+    console.log("[v0] No user found with email:", email)
     return { success: false, error: "Invalid email or password" }
   }
 
   const user = users[0] as User
+  console.log("[v0] User found:", user.email, "ID:", user.id)
 
   // Compare password using bcrypt
+  console.log("[v0] Comparing passwords...")
   const passwordMatch = await bcrypt.compare(password, user.password_hash)
+  console.log("[v0] Password match:", passwordMatch)
   if (!passwordMatch) {
+    console.log("[v0] Password does not match")
     return { success: false, error: "Invalid email or password" }
   }
 
