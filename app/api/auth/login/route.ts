@@ -18,9 +18,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: result.error }, { status: 401 })
     }
 
-    // Create response with user data
+    // Create response with user data and token
     const response = NextResponse.json({
       success: true,
+      token: result.token,
       user: {
         id: result.user!.id,
         email: result.user!.email,
