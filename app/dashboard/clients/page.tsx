@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Search, Edit, Trash2, Building2, MapPin, Download, Users, Mail, Phone, ChevronRight } from "lucide-react"
+import { authenticatedFetch } from "@/lib/client-fetch"
 
 interface Site {
   id: number
@@ -58,7 +59,7 @@ export default function ClientsPage() {
 
   async function fetchClients() {
     try {
-      const res = await fetch("/api/clients")
+      const res = await authenticatedFetch("/api/clients")
       if (res.ok) { const data = await res.json(); setClients(data.clients || []) }
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
@@ -67,7 +68,7 @@ export default function ClientsPage() {
     setViewingClient(client)
     setLoadingSites(true)
     try {
-      const res = await fetch(`/api/clients/${client.id}/sites`)
+      const res = await authenticatedFetch(`/api/clients/${client.id}/sites`)
       if (res.ok) { const data = await res.json(); setClientSites(data.sites || []) }
     } catch (e) { console.error(e) } finally { setLoadingSites(false) }
   }
@@ -75,7 +76,7 @@ export default function ClientsPage() {
   async function downloadReport() {
     setExportingReport(true)
     try {
-      const res = await fetch("/api/reports/clients")
+      const res = await authenticatedFetch("/api/reports/clients")
       if (res.ok) {
         const blob = await res.blob()
         const url = window.URL.createObjectURL(blob)
@@ -97,7 +98,7 @@ export default function ClientsPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     try {
-      const res = await fetch("/api/clients", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) })
+      const res = await authenticatedFetch("/api/clients", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) })
       if (res.ok) { setShowCreate(false); resetForm(); fetchClients() }
     } catch (e) { console.error(e) }
   }

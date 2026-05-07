@@ -1,14 +1,24 @@
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { sql, type User } from "./db"
 import bcrypt from "bcryptjs"
 
 /**
- * Get the current user session from the session_id cookie
+ * Get the current user session from the session_id cookie or Authorization header
  * Validates the session exists in the database and hasn't expired
  */
 export async function getSession(): Promise<User | null> {
+  // Try to get token from cookie first
   const cookieStore = await cookies()
-  const token = cookieStore.get("session_id")?.value
+  let token = cookieStore.get("session_id")?.value
+
+  // If no cookie, try to get token from Authorization header (for API routes with Bearer tokens)
+  if (!token) {
+    const headerList = await headers()
+    const authHeader = headerList.get("authorization")
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.slice(7)
+    }
+  }
 
   if (!token) {
     return null

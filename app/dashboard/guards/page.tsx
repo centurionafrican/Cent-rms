@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Plus, Pencil, Trash2, Search, Users, CalendarX, UserCheck, Upload, FileText, X, Mail, Download, CheckCircle, AlertCircle } from "lucide-react"
+import { authenticatedFetch } from "@/lib/client-fetch"
 
 const STATUS_OPTIONS = [
   { value: "recruitment", label: "Recruitment", color: "bg-blue-100 text-blue-700 border-blue-200" },
@@ -84,7 +85,7 @@ export default function GuardsPage() {
 
   async function fetchGuards() {
     try {
-      const res = await fetch("/api/guards")
+      const res = await authenticatedFetch("/api/guards")
       const data = await res.json()
       setGuards(Array.isArray(data) ? data : data.guards || [])
     } catch (error) { console.error("Failed to fetch guards:", error) }
