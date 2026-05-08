@@ -32,18 +32,65 @@ CREATE TABLE IF NOT EXISTS locations (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Security Posts / Checkpoints table
+CREATE TABLE IF NOT EXISTS posts (
+  id SERIAL PRIMARY KEY,
+
+  location_id INTEGER NOT NULL 
+    REFERENCES locations(id) 
+    ON DELETE CASCADE,
+
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+
+  guards_needed INTEGER DEFAULT 1,
+
+  post_status VARCHAR(20) DEFAULT 'active'
+    CHECK (post_status IN ('active', 'inactive')),
+
+  is_active BOOLEAN DEFAULT true,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_posts_location 
+ON posts(location_id);
+
+CREATE INDEX IF NOT EXISTS idx_posts_status 
+ON posts(post_status);
+
 -- Shifts table
 CREATE TABLE IF NOT EXISTS shifts (
   id SERIAL PRIMARY KEY,
+
   location_id INTEGER REFERENCES locations(id) ON DELETE CASCADE,
+
+  post_id INTEGER REFERENCES posts(id) ON DELETE SET NULL,
+
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+
   shift_date DATE NOT NULL,
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
-  break_duration INTEGER DEFAULT 0, -- in minutes
-  status VARCHAR(20) DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'in-progress', 'completed', 'cancelled', 'no-show')),
+
+  break_duration INTEGER DEFAULT 0,
+
+  status VARCHAR(20) DEFAULT 'scheduled'
+    CHECK (
+      status IN (
+        'scheduled',
+        'in-progress',
+        'completed',
+        'cancelled',
+        'no-show'
+      )
+    ),
+
   notes TEXT,
+
   created_by INTEGER REFERENCES users(id),
+
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
