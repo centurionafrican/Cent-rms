@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Search, User, MapPin, Clock, CalendarX, Shield, Calendar, CheckCircle2, XCircle, Clock3, AlertCircle, CalendarOff } from "lucide-react"
-import { authenticatedFetch } from "@/lib/client-fetch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface GuardInfo {
@@ -106,7 +105,7 @@ export default function GuardPortalPage() {
     setLoading(true)
     setError("")
     try {
-      const res = await authenticatedFetch(`/api/guard-portal?guard_id=${guardId}`)
+      const res = await fetch(`/api/guard-portal?guard_id=${guardId}`)
       if (res.ok) {
         const data = await res.json()
         setGuard(data.guard)
@@ -130,7 +129,7 @@ export default function GuardPortalPage() {
   async function loadGuards() {
     if (guardsLoaded) return
     try {
-      const res = await authenticatedFetch("/api/guards")
+      const res = await fetch("/api/guards")
       if (res.ok) {
         const data = await res.json()
         const guardsArray = Array.isArray(data) ? data : data.guards || []
@@ -173,7 +172,7 @@ export default function GuardPortalPage() {
     setLinkSent(false)
     setPortalLink(null)
     try {
-      const res = await authenticatedFetch("/api/guard-portal/send-link", {
+      const res = await fetch("/api/guard-portal/send-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ guard_id: Number(guardId) }),

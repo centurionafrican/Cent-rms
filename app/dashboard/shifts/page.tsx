@@ -41,7 +41,6 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Pencil, Trash2, Clock } from "lucide-react"
-import { authenticatedFetch } from "@/lib/client-fetch"
 
 type Shift = {
   id: number
@@ -76,7 +75,7 @@ export default function ShiftsPage() {
 
   async function fetchShifts() {
     try {
-      const res = await authenticatedFetch("/api/shifts")
+      const res = await fetch("/api/shifts")
       const data = await res.json()
       setShifts(Array.isArray(data) ? data : [])
     } catch (error) {
@@ -89,7 +88,7 @@ export default function ShiftsPage() {
   async function handleCreate() {
     setSaving(true)
     try {
-      const res = await authenticatedFetch("/api/shifts", {
+      const res = await fetch("/api/shifts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -110,7 +109,7 @@ export default function ShiftsPage() {
     if (!selectedShift) return
     setSaving(true)
     try {
-      const res = await authenticatedFetch(`/api/shifts/${selectedShift.id}`, {
+      const res = await fetch(`/api/shifts/${selectedShift.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -131,7 +130,7 @@ export default function ShiftsPage() {
   async function handleDelete() {
     if (!selectedShift) return
     try {
-      const res = await authenticatedFetch(`/api/shifts/${selectedShift.id}`, {
+      const res = await fetch(`/api/shifts/${selectedShift.id}`, {
         method: "DELETE",
       })
       if (res.ok) {

@@ -12,7 +12,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Pencil, Trash2, Search, MapPin, Eye, Users, ChevronRight, Download } from "lucide-react"
-import { authenticatedFetch } from "@/lib/client-fetch"
 
 const SITE_STATUS_OPTIONS = [
   { value: "on_survey", label: "On Survey", color: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -80,32 +79,27 @@ export default function SitesPage() {
 
   async function fetchSites() {
     try {
-      const res = await authenticatedFetch("/api/sites")
+      const res = await fetch("/api/sites")
+      if (!res.ok) throw new Error("Failed to fetch sites")
       const data = await res.json()
-      setSites(data.sites || [])
-    } catch (e) { console.error(e) }
+      setSites(Array.isArray(data) ? data : data.sites || [])
+    } catch (e) { console.error("Error fetching sites:", e) }
     finally { setLoading(false) }
   }
 
   async function fetchClients() {
     try {
-      const res = await authenticatedFetch("/api/clients")
+      const res = await fetch("/api/clients")
+      if (!res.ok) throw new Error("Failed to fetch clients")
       const data = await res.json()
-      setClients(data.clients || [])
-    } catch (e) { console.error(e) }
-  }
-
-  async function fetchClients() {
-    try {
-      const res = await authenticatedFetch("/api/clients")
-      if (res.ok) { const data = await res.json(); setClients(data.clients || []) }
-    } catch (e) { console.error(e) }
+      setClients(Array.isArray(data) ? data : data.clients || [])
+    } catch (e) { console.error("Error fetching clients:", e) }
   }
 
   async function fetchSiteGuards(siteId: number) {
     setLoadingGuards(true)
     try {
-      const res = await authenticatedFetch(`/api/sites/${siteId}/guards`)
+      const res = await fetch(`/api/sites/${siteId}/guards`)
       if (res.ok) {
         const data = await res.json()
         setSiteGuards(data.guards || [])
@@ -117,7 +111,7 @@ export default function SitesPage() {
   async function handleCreate() {
     setSaving(true)
     try {
-      const res = await authenticatedFetch("/api/sites", {
+      const res = await fetch("/api/sites", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData, client_id: formData.client_id ? Number(formData.client_id) : null,
