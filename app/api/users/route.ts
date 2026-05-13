@@ -5,9 +5,6 @@ import bcrypt from "bcryptjs"
 
 export async function GET() {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     // Only admins can view all users

@@ -5,9 +5,6 @@ import { sendEmail, assignmentNotificationEmail } from "@/lib/email"
 
 export async function GET(request: Request) {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)

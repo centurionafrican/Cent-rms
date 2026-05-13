@@ -4,10 +4,6 @@ import { NextResponse } from "next/server"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await getSession()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
-    const { id } = await params
 
     const sites = await sql`
       SELECT id, name, address, guards_needed, site_status, contact_person, contact_phone

@@ -6,10 +6,6 @@ import { sendEmail, guardOffNotificationEmail } from "@/lib/email"
 // GET — list offs (roster_manager sees all, guard sees own)
 export async function GET(request: Request) {
   try {
-    const user = await getSession()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
-    const { searchParams } = new URL(request.url)
     const guardId = searchParams.get("guard_id")
     const from    = searchParams.get("from")
     const to      = searchParams.get("to")
