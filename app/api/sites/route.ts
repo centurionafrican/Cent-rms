@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, address, contact_person, contact_phone, is_active, client_id, site_status, guards_needed } = body
+    const { name, address, contact_person, contact_phone, is_active, client_id, site_status, guards_needed, posts } = body
 
     if (!name) {
       return NextResponse.json({ error: "Site name is required" }, { status: 400 })
@@ -41,6 +41,18 @@ export async function POST(request: Request) {
       VALUES (${name}, ${address || null}, ${contact_person || null}, ${contact_phone || null}, ${is_active !== false}, ${client_id || null}, ${site_status || 'active'}, ${guards_needed || 1})
       RETURNING *
     `
+
+    const siteId = result[0].id
+
+    // Create posts if provided
+    if (posts && Array.isArray(posts) && posts.length > 0) {
+      for (const post of posts) {
+        await sql`
+          INSERT INTO posts (site_id, name, post_type)
+          VALUES (${siteId}, ${post.name}, ${post.post_type || null})
+        `
+      }
+    }
 
     return NextResponse.json(result[0], { status: 201 })
   } catch (error) {

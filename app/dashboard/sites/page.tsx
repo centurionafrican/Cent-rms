@@ -47,6 +47,12 @@ type SiteGuard = {
   days_assigned: number
 }
 
+type Post = {
+  id?: number
+  name: string
+  post_type?: string
+}
+
 export default function SitesPage() {
   const [sites, setSites] = useState<Site[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -62,6 +68,8 @@ export default function SitesPage() {
   const [showAllSites, setShowAllSites] = useState(false)
   const [loadingGuards, setLoadingGuards] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [posts, setPosts] = useState<Post[]>([])
+  const [newPost, setNewPost] = useState("")
   const [formData, setFormData] = useState({
     name: "", address: "", contact_person: "", contact_phone: "",
     client_id: "", site_status: "active", guards_needed: "1",
@@ -114,9 +122,10 @@ export default function SitesPage() {
         body: JSON.stringify({
           ...formData, client_id: formData.client_id ? Number(formData.client_id) : null,
           guards_needed: Number(formData.guards_needed) || 1, is_active: formData.site_status !== "inactive",
+          posts: posts.length > 0 ? posts : undefined,
         }),
       })
-      if (res.ok) { setIsCreateOpen(false); resetForm(); fetchSites() }
+      if (res.ok) { setIsCreateOpen(false); resetForm(); setPosts([]); fetchSites() }
     } catch (e) { console.error(e) }
     finally { setSaving(false) }
   }
@@ -145,8 +154,21 @@ export default function SitesPage() {
     } catch (e) { console.error(e) }
   }
 
+  function addPost() {
+    if (newPost.trim()) {
+      setPosts([...posts, { name: newPost }])
+      setNewPost("")
+    }
+  }
+
+  function removePost(index: number) {
+    setPosts(posts.filter((_, i) => i !== index))
+  }
+
   function resetForm() {
     setFormData({ name: "", address: "", contact_person: "", contact_phone: "", client_id: "", site_status: "active", guards_needed: "1" })
+    setPosts([])
+    setNewPost("")
   }
 
   function openEdit(site: Site) {
@@ -244,6 +266,25 @@ export default function SitesPage() {
           <Label>Guards Needed</Label>
           <Input type="number" min="1" value={formData.guards_needed} onChange={(e) => setFormData({ ...formData, guards_needed: e.target.value })} />
         </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Site Posts (e.g., Gate, Main Entrance, Back Entrance)</Label>
+        <div className="flex gap-2">
+          <Input value={newPost} onChange={(e) => setNewPost(e.target.value)} placeholder="Enter post name..." onKeyPress={(e) => e.key === "Enter" && addPost()} />
+          <Button type="button" onClick={addPost} variant="outline">Add Post</Button>
+        </div>
+        {posts.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {posts.map((post, idx) => (
+              <div key={idx} className="flex items-center justify-between bg-muted p-2 rounded text-sm">
+                <span>{post.name}</span>
+                <Button type="button" variant="ghost" size="icon" onClick={() => removePost(idx)} className="h-6 w-6">
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
