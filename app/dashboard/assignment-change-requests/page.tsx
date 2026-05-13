@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { ArrowLeftRight, Plus, Check, X, Play, Clock, CheckCircle2, XCircle, RefreshCw, Search } from "lucide-react"
+import { authenticatedFetch } from "@/lib/client-fetch"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -130,7 +131,7 @@ export default function AssignmentChangeRequestsPage() {
     if (!selectedAssignment || !reason.trim()) return
     setSubmitting(true)
     try {
-      const res = await fetch("/api/assignment-change-requests", {
+      const res = await authenticatedFetch("/api/assignment-change-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -158,7 +159,7 @@ export default function AssignmentChangeRequestsPage() {
     if (!reviewRequest) return
     setReviewing(true)
     try {
-      const res = await fetch(`/api/assignment-change-requests/${reviewRequest.id}`, {
+      const res = await authenticatedFetch(`/api/assignment-change-requests/${reviewRequest.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, ops_notes: opsNotes.trim() || undefined }),
@@ -181,7 +182,7 @@ export default function AssignmentChangeRequestsPage() {
     if (!executeRequest || !executeGuardId) return
     setExecuting(true)
     try {
-      const res = await fetch(`/api/assignment-change-requests/${executeRequest.id}`, {
+      const res = await authenticatedFetch(`/api/assignment-change-requests/${executeRequest.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "execute", new_guard_id: Number(executeGuardId) }),

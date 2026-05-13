@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Pencil, Trash2, Search, MapPin, Eye, Users, ChevronRight, Download } from "lucide-react"
+import { authenticatedFetch } from "@/lib/client-fetch"
 
 const SITE_STATUS_OPTIONS = [
   { value: "on_survey", label: "On Survey", color: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -71,16 +72,24 @@ export default function SitesPage() {
 
   async function fetchSites() {
     try {
-      const res = await fetch("/api/sites")
+      const res = await authenticatedFetch("/api/sites")
       const data = await res.json()
-      setSites(data)
+      setSites(data.sites || [])
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
   }
 
   async function fetchClients() {
     try {
-      const res = await fetch("/api/clients")
+      const res = await authenticatedFetch("/api/clients")
+      const data = await res.json()
+      setClients(data.clients || [])
+    } catch (e) { console.error(e) }
+  }
+
+  async function fetchClients() {
+    try {
+      const res = await authenticatedFetch("/api/clients")
       if (res.ok) { const data = await res.json(); setClients(data.clients || []) }
     } catch (e) { console.error(e) }
   }
@@ -88,7 +97,7 @@ export default function SitesPage() {
   async function fetchSiteGuards(siteId: number) {
     setLoadingGuards(true)
     try {
-      const res = await fetch(`/api/sites/${siteId}/guards`)
+      const res = await authenticatedFetch(`/api/sites/${siteId}/guards`)
       if (res.ok) {
         const data = await res.json()
         setSiteGuards(data.guards || [])
@@ -100,7 +109,7 @@ export default function SitesPage() {
   async function handleCreate() {
     setSaving(true)
     try {
-      const res = await fetch("/api/sites", {
+      const res = await authenticatedFetch("/api/sites", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData, client_id: formData.client_id ? Number(formData.client_id) : null,
@@ -116,7 +125,7 @@ export default function SitesPage() {
     if (!selectedSite) return
     setSaving(true)
     try {
-      const res = await fetch(`/api/sites/${selectedSite.id}`, {
+      const res = await authenticatedFetch(`/api/sites/${selectedSite.id}`, {
         method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData, client_id: formData.client_id ? Number(formData.client_id) : null,
@@ -131,7 +140,7 @@ export default function SitesPage() {
   async function handleDelete() {
     if (!selectedSite) return
     try {
-      const res = await fetch(`/api/sites/${selectedSite.id}`, { method: "DELETE" })
+      const res = await authenticatedFetch(`/api/sites/${selectedSite.id}`, { method: "DELETE" })
       if (res.ok) { setIsDeleteOpen(false); setSelectedSite(null); fetchSites() }
     } catch (e) { console.error(e) }
   }
@@ -160,7 +169,7 @@ export default function SitesPage() {
     if (!selectedSite) return
     setIsExporting(true)
     try {
-      const response = await fetch(`/api/sites/${selectedSite.id}/export-guards`)
+      const response = await authenticatedFetch(`/api/sites/${selectedSite.id}/export-guards`)
       if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)

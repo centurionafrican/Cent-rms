@@ -103,7 +103,7 @@ export default function GuardsPage() {
       const fd = new FormData()
       fd.append("file", file)
       fd.append("folder", "guards")
-      const res = await fetch("/api/upload", { method: "POST", body: fd })
+      const res = await authenticatedFetch("/api/upload", { method: "POST", body: fd })
       if (res.ok) {
         const data = await res.json()
         setPendingFiles((prev) => [...prev, { url: data.url, filename: data.filename, type: data.type, size: data.size, uploaded_at: new Date().toISOString() }])
@@ -115,7 +115,7 @@ export default function GuardsPage() {
     setSaving(true)
     try {
       const allAttachments = [...pendingFiles]
-      const res = await fetch("/api/guards", {
+      const res = await authenticatedFetch("/api/guards", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...formData, annual_leave_days: Number.parseInt(formData.annual_leave_days) || 21, attachments: JSON.stringify(allAttachments) }),
       })
@@ -130,7 +130,7 @@ export default function GuardsPage() {
     try {
       const existingAttachments = selectedGuard.attachments || []
       const allAttachments = [...existingAttachments, ...pendingFiles]
-      const res = await fetch(`/api/guards/${selectedGuard.id}`, {
+      const res = await authenticatedFetch(`/api/guards/${selectedGuard.id}`, {
         method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...formData, annual_leave_days: Number.parseInt(formData.annual_leave_days) || 21, attachments: JSON.stringify(allAttachments) }),
       })
@@ -142,7 +142,7 @@ export default function GuardsPage() {
   async function handleDelete() {
     if (!selectedGuard) return
     try {
-      const res = await fetch(`/api/guards/${selectedGuard.id}`, { method: "DELETE" })
+      const res = await authenticatedFetch(`/api/guards/${selectedGuard.id}`, { method: "DELETE" })
       if (res.ok) { setIsDeleteOpen(false); setSelectedGuard(null); fetchGuards() }
     } catch (error) { console.error(error) }
   }
@@ -150,7 +150,7 @@ export default function GuardsPage() {
   async function handleBulkDelete() {
     setBulkLoading(true)
     try {
-      const res = await fetch("/api/guards/bulk-delete", {
+      const res = await authenticatedFetch("/api/guards/bulk-delete", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: Array.from(selectedIds) }),
@@ -167,7 +167,7 @@ export default function GuardsPage() {
     if (!bulkStatus || selectedIds.size === 0) return
     setBulkLoading(true)
     try {
-      const res = await fetch("/api/guards/bulk-status", {
+      const res = await authenticatedFetch("/api/guards/bulk-status", {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ guard_ids: Array.from(selectedIds), new_status: bulkStatus }),
       })
@@ -204,7 +204,7 @@ export default function GuardsPage() {
     setBulkSendingLinks(true)
     setBulkSendResult(null)
     try {
-      const res = await fetch("/api/guard-portal/bulk-send-links", {
+      const res = await authenticatedFetch("/api/guard-portal/bulk-send-links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ guard_ids: withEmail.map((g) => g.id) }),
@@ -225,7 +225,7 @@ export default function GuardsPage() {
     try {
       const fd = new FormData()
       fd.append("file", importFile)
-      const res = await fetch("/api/guards/import", { method: "POST", body: fd })
+      const res = await authenticatedFetch("/api/guards/import", { method: "POST", body: fd })
       const data = await res.json()
       if (res.ok) { setImportResult(data); fetchGuards() }
       else { alert(`Import failed: ${data.error}`) }
@@ -339,7 +339,7 @@ export default function GuardsPage() {
     setSendingLinkId(guard.id)
     setLinkSentId(null)
     try {
-      const res = await fetch("/api/guard-portal/send-link", {
+      const res = await authenticatedFetch("/api/guard-portal/send-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ guard_id: guard.id }),

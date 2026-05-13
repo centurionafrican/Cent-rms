@@ -107,7 +107,7 @@ export default function ClientsPage() {
     e.preventDefault()
     if (!editingClient) return
     try {
-      const res = await fetch(`/api/clients/${editingClient.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) })
+      const res = await authenticatedFetch(`/api/clients/${editingClient.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) })
       if (res.ok) { setEditingClient(null); resetForm(); fetchClients() }
     } catch (e) { console.error(e) }
   }
@@ -115,7 +115,7 @@ export default function ClientsPage() {
   async function handleDelete(id: number) {
     if (!confirm("Are you sure you want to delete this client?")) return
     try {
-      const res = await fetch(`/api/clients/${id}`, { method: "DELETE" })
+      const res = await authenticatedFetch(`/api/clients/${id}`, { method: "DELETE" })
       if (res.ok) { setSelectedIds((prev) => { const s = new Set(prev); s.delete(id); return s }); fetchClients() }
     } catch (e) { console.error(e) }
   }
@@ -124,7 +124,7 @@ export default function ClientsPage() {
     if (!confirm(`Delete ${selectedIds.size} selected client(s)? This cannot be undone.`)) return
     setBulkDeleting(true)
     try {
-      const res = await fetch("/api/clients/bulk-delete", {
+      const res = await authenticatedFetch("/api/clients/bulk-delete", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: Array.from(selectedIds) }),

@@ -44,6 +44,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Pencil, Trash2, Search, AlertTriangle, Mail, Eye, CheckCircle, Upload, FileImage, Shield } from "lucide-react"
+import { authenticatedFetch } from "@/lib/client-fetch"
 
 type Attachment = {
   url: string
@@ -156,7 +157,7 @@ export default function IncidentsPage() {
       for (const file of Array.from(files)) {
         const fd = new FormData()
         fd.append("file", file)
-        const res = await fetch("/api/upload", { method: "POST", body: fd })
+        const res = await authenticatedFetch("/api/upload", { method: "POST", body: fd })
         if (res.ok) {
           const data = await res.json()
           newAttachments.push({ url: data.url, name: data.filename, type: data.type, size: data.size })
@@ -195,7 +196,7 @@ export default function IncidentsPage() {
   async function handleCreate() {
     setSaving(true)
     try {
-      const res = await fetch("/api/incidents", {
+      const res = await authenticatedFetch("/api/incidents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -222,7 +223,7 @@ export default function IncidentsPage() {
     if (!selectedIncident) return
     setSaving(true)
     try {
-      const res = await fetch(`/api/incidents/${selectedIncident.id}`, {
+      const res = await authenticatedFetch(`/api/incidents/${selectedIncident.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -250,7 +251,7 @@ export default function IncidentsPage() {
     if (!selectedIncident) return
     setSaving(true)
     try {
-      const res = await fetch(`/api/incidents/${selectedIncident.id}`, {
+      const res = await authenticatedFetch(`/api/incidents/${selectedIncident.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -275,7 +276,7 @@ export default function IncidentsPage() {
   async function handleDelete() {
     if (!selectedIncident) return
     try {
-      const res = await fetch(`/api/incidents/${selectedIncident.id}`, { method: "DELETE" })
+      const res = await authenticatedFetch(`/api/incidents/${selectedIncident.id}`, { method: "DELETE" })
       if (res.ok) {
         setIsDeleteOpen(false)
         setSelectedIncident(null)
@@ -289,7 +290,7 @@ export default function IncidentsPage() {
     if (!confirm(`Delete ${selectedIds.size} selected incident(s)? This cannot be undone.`)) return
     setBulkDeleting(true)
     try {
-      const res = await fetch("/api/incidents/bulk-delete", {
+      const res = await authenticatedFetch("/api/incidents/bulk-delete", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: Array.from(selectedIds) }),
@@ -314,7 +315,7 @@ export default function IncidentsPage() {
     if (!selectedIncident) return
     setSendingEmail(true)
     try {
-      const res = await fetch(`/api/incidents/${selectedIncident.id}/send-email`, {
+      const res = await authenticatedFetch(`/api/incidents/${selectedIncident.id}/send-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

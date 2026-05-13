@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { CalendarOff, Plus, Trash2, Search, ChevronLeft, ChevronRight, Calendar } from "lucide-react"
+import { authenticatedFetch } from "@/lib/client-fetch"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -112,7 +113,7 @@ export default function GuardOffsPage() {
     if (!formGuardId || formDates.length === 0 || !formReason) return
     setSubmitting(true)
     try {
-      const res = await fetch("/api/guard-offs", {
+      const res = await authenticatedFetch("/api/guard-offs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ guard_id: Number(formGuardId), dates: formDates, reason: formReason, notes: formNotes.trim() || undefined }),
@@ -136,7 +137,7 @@ export default function GuardOffsPage() {
 
   async function deleteOff() {
     if (!deleteId) return
-    await fetch(`/api/guard-offs?id=${deleteId}`, { method: "DELETE" })
+    await authenticatedFetch(`/api/guard-offs?id=${deleteId}`, { method: "DELETE" })
     setDeleteId(null)
     mutate(`/api/guard-offs?limit=500${guardParam}`)
   }

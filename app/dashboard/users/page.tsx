@@ -44,6 +44,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { UserCog, Plus, Search, Edit, Trash2, Shield, Key } from "lucide-react"
+import { authenticatedFetch } from "@/lib/client-fetch"
 
 interface User {
   id: number
@@ -86,7 +87,7 @@ export default function UsersPage() {
 
   async function fetchUsers() {
     try {
-      const res = await fetch("/api/users")
+      const res = await authenticatedFetch("/api/users")
       if (res.ok) {
         const data = await res.json()
         setUsers(data.users || [])
@@ -113,7 +114,7 @@ export default function UsersPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     try {
-      const res = await fetch("/api/users", {
+      const res = await authenticatedFetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -135,7 +136,7 @@ export default function UsersPage() {
     e.preventDefault()
     if (!selectedUser) return
     try {
-      const res = await fetch(`/api/users/${selectedUser.id}`, {
+      const res = await authenticatedFetch(`/api/users/${selectedUser.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -163,7 +164,7 @@ export default function UsersPage() {
   async function handleResetPassword() {
     if (!selectedUser || !newPassword) return
     try {
-      const res = await fetch(`/api/users/${selectedUser.id}/reset-password`, {
+      const res = await authenticatedFetch(`/api/users/${selectedUser.id}/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: newPassword }),
@@ -184,7 +185,7 @@ export default function UsersPage() {
 
   async function handleDelete(id: number) {
     try {
-      const res = await fetch(`/api/users/${id}`, { method: "DELETE" })
+      const res = await authenticatedFetch(`/api/users/${id}`, { method: "DELETE" })
       if (res.ok) {
         fetchUsers()
       }
