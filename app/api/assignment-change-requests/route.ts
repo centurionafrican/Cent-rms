@@ -6,6 +6,7 @@ import { sendEmail, assignmentChangeRequestEmail } from "@/lib/email"
 // GET — list requests (filtered by role)
 export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url)
     const status = searchParams.get("status") || "all"
 
     const rows = await sql`
