@@ -30,7 +30,6 @@ export async function GET(
     }
 
     return NextResponse.json(shifts[0])
-
   } catch (error) {
     console.error("Error fetching shift:", error)
 
@@ -67,7 +66,8 @@ export async function PUT(
     } = body
 
     const result = await sql`
-      UPDATE shifts SET
+      UPDATE shifts
+      SET
         name = ${name},
         start_time = ${start_time},
         end_time = ${end_time},
@@ -86,7 +86,6 @@ export async function PUT(
     }
 
     return NextResponse.json(result[0])
-
   } catch (error) {
     console.error("Error updating shift:", error)
 
@@ -117,7 +116,6 @@ export async function DELETE(
     `
 
     return NextResponse.json({ success: true })
-
   } catch (error) {
     console.error("Error deleting shift:", error)
 
