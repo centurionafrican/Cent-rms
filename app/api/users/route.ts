@@ -5,13 +5,6 @@ import bcrypt from "bcryptjs"
 
 export async function GET() {
   try {
-    }
-
-    // Only admins can view all users
-    if (user.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
-
     const users = await sql`
       SELECT id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login
       FROM users
