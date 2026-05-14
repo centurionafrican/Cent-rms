@@ -10,8 +10,9 @@ export async function GET(request: Request) {
     const guardId = searchParams.get("guard_id")
     const from    = searchParams.get("from")
     const to      = searchParams.get("to")
+    const user = await getSession()
 
-    if (user.role === "guard") {
+    if (user && user.role === "guard") {
       // Guard sees only their own offs
       const guard = await sql`SELECT id FROM guards WHERE user_id = ${user.id} LIMIT 1`
       if (!guard.length) return NextResponse.json([])

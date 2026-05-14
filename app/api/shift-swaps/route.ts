@@ -4,10 +4,10 @@ import { sql } from '@/lib/db'
 
 export async function GET() {
   try {
-    }
-
+    const user = await getSession()
+    
     let requests
-    if (user.role === 'employee') {
+    if (user && user.role === 'employee') {
       requests = await sql`
         SELECT sw.*, 
                s.start_time as shift_start, s.end_time as shift_end,
