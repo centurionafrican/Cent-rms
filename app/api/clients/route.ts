@@ -20,6 +20,21 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const body = await request.json()
+    const { name, contact_person, contact_email, contact_phone, address } = body
+
+    if (!name) {
+      return NextResponse.json({ error: "Client name is required" }, { status: 400 })
+    }
+
+    const result = await sql`
+      INSERT INTO clients (name, contact_person, contact_email, contact_phone, address)
+      VALUES (${name}, ${contact_person || null}, ${contact_email || null}, ${contact_phone || null}, ${address || null})
+      RETURNING *
+    `
+
+    return NextResponse.json(result[0], { status: 201 })
+  } catch (error) {
     console.error("Error creating client:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
