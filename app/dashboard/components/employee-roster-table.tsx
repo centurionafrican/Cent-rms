@@ -69,13 +69,23 @@ export function EmployeeRosterTable({ guards }: { guards: Guard[] }) {
                   {(guard.phone as string) || "—"}
                 </TableCell>
                 <TableCell>
-                  {guard.shift_name ? (
-                    <Badge variant="outline" className="text-xs">{guard.shift_name as string}</Badge>
-                  ) : (
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-xs">
-                      Unassigned
-                    </Badge>
-                  )}
+                  <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-xs">
+                    —
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-sm">
+                  —
+                </TableCell>
+                <TableCell className="text-sm">
+                  —
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant="default"
+                    className="bg-green-100 text-green-700"
+                  >
+                    {(guard.status as string) || "Active"}
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-sm">
                   {guard.time_in
