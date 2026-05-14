@@ -44,7 +44,6 @@ export async function GET(request: Request) {
 // POST — coordinator creates a change request
 export async function POST(request: Request) {
   try {
-    const user = await getSession()
     if (!user || !["coordinator", "roster_manager", "admin"].includes(user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

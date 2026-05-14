@@ -19,10 +19,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await getSession()
-    if (!user || user.role === "guard") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
 
     const body = await request.json()
     const { name, address, contact_person, contact_phone, is_active, client_id, site_status, guards_needed, posts } = body

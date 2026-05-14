@@ -10,7 +10,6 @@ export async function GET(request: Request) {
     const guardId = searchParams.get("guard_id")
     const from    = searchParams.get("from")
     const to      = searchParams.get("to")
-    const user = await getSession()
 
     if (user && user.role === "guard") {
       // Guard sees only their own offs
@@ -67,7 +66,6 @@ export async function GET(request: Request) {
 // POST — roster manager or admin creates off day(s)
 export async function POST(request: Request) {
   try {
-    const user = await getSession()
     if (!user || !["roster_manager", "admin"].includes(user.role)) {
       return NextResponse.json({ error: "Only Roster Managers can plan offs" }, { status: 403 })
     }
@@ -125,7 +123,6 @@ export async function POST(request: Request) {
 // DELETE — remove a specific off day
 export async function DELETE(request: Request) {
   try {
-    const user = await getSession()
     if (!user || !["roster_manager", "admin"].includes(user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }

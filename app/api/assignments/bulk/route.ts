@@ -4,14 +4,6 @@ import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
   try {
-    const user = await getSession()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
-    const { site_id, shift_id, date_from, date_to, guard_ids, auto_assign, guards_needed, position } = await request.json()
-
-    if (!site_id || !shift_id || !date_from || !date_to) {
-      return NextResponse.json({ error: "Site, shift, and date range are required" }, { status: 400 })
-    }
 
     // Generate all dates in the range
     const dates: string[] = []

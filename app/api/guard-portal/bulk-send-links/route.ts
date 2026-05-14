@@ -6,13 +6,6 @@ import { getSession } from "@/lib/auth"
 
 export async function POST(request: Request) {
   try {
-    const user = await getSession()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
-    const { guard_ids } = await request.json()
-    if (!Array.isArray(guard_ids) || guard_ids.length === 0) {
-      return NextResponse.json({ error: "guard_ids array is required" }, { status: 400 })
-    }
 
     const reqUrl = new URL(request.url)
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${reqUrl.protocol}//${reqUrl.host}`

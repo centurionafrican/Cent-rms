@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
-import { getSession } from "@/lib/auth"
 
 export async function GET(
   request: Request,
@@ -29,11 +28,6 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getSession()
-    if (!user || user.role === "guard") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const { id } = await params
     const body = await request.json()
     const { name, address, contact_person, contact_phone, is_active, client_id, site_status, guards_needed, posts } = body
@@ -84,10 +78,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getSession()
-    if (!user || user.role === "guard") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
 
     const { id } = await params
 

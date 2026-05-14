@@ -4,7 +4,6 @@ import { sql } from '@/lib/db'
 
 export async function GET() {
   try {
-    const user = await getSession()
     
     let requests
     if (user && user.role === 'employee') {
@@ -56,10 +55,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
 
     const { original_shift_id, target_user_id, notes } = await request.json()
 
