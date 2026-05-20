@@ -133,9 +133,10 @@ export default function SitesPage() {
         body: JSON.stringify({
           ...formData, client_id: formData.client_id ? Number(formData.client_id) : null,
           guards_needed: Number(formData.guards_needed) || 1, is_active: formData.site_status !== "inactive",
+          posts: posts.length > 0 ? posts : undefined,
         }),
       })
-      if (res.ok) { setIsEditOpen(false); setSelectedSite(null); resetForm(); fetchSites() }
+      if (res.ok) { setIsEditOpen(false); setSelectedSite(null); resetForm(); setPosts([]); fetchSites() }
     } catch (e) { console.error(e) }
     finally { setSaving(false) }
   }
@@ -165,13 +166,24 @@ export default function SitesPage() {
     setNewPost("")
   }
 
-  function openEdit(site: Site) {
+  async function openEdit(site: Site) {
     setSelectedSite(site)
     setFormData({
       name: site.name, address: site.address || "", contact_person: site.contact_person || "",
       contact_phone: site.contact_phone || "", client_id: site.client_id ? String(site.client_id) : "",
       site_status: site.site_status || "active", guards_needed: String(site.guards_needed || 1),
     })
+    // Fetch posts for this site
+    try {
+      const res = await fetch(`/api/sites/${site.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setPosts(data.posts || [])
+      }
+    } catch (e) {
+      console.error("Error fetching site posts:", e)
+      setPosts([])
+    }
     setIsEditOpen(true)
   }
 

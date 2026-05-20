@@ -95,6 +95,13 @@ interface Site {
   id: number
   name: string
   guards_needed?: number
+  posts?: Post[]
+}
+
+interface Post {
+  id?: number
+  name: string
+  post_type?: string
 }
 
 interface Shift {
@@ -219,6 +226,8 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
   })
   const [weekAssignments, setWeekAssignments] = useState<Assignment[]>([])
   const [weekLoading, setWeekLoading] = useState(false)
+  const [selectedSitePosts, setSelectedSitePosts] = useState<Post[]>([])
+  const [selectedPostId, setSelectedPostId] = useState("")
 
   const weekDates = getWeekDates(weekStart)
 
@@ -672,6 +681,22 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
     setBulkRelievingSiteId(siteId)
     // Get active guards
     setBulkRelievingGuards(guards.filter(g => g.status !== "inactive"))
+  }
+
+  async function handleSiteSelection(siteId: string) {
+    setFormData({ ...formData, site_id: siteId })
+    // Fetch posts for this site
+    try {
+      const res = await fetch(`/api/sites/${siteId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setSelectedSitePosts(data.posts || [])
+        setSelectedPostId("")
+      }
+    } catch (e) {
+      console.error("Error fetching site posts:", e)
+      setSelectedSitePosts([])
+    }
   }
 
   async function handleRotation() {
