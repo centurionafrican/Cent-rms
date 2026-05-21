@@ -282,7 +282,7 @@ export default function SitesPage() {
         {posts.length > 0 && (
           <div className="mt-2 space-y-1">
             {posts.map((post, idx) => (
-              <div key={idx} className="flex items-center justify-between bg-muted p-2 rounded text-sm">
+              <div key={post.id || `post-${idx}`} className="flex items-center justify-between bg-muted p-2 rounded text-sm">
                 <span>{post.name}</span>
                 <Button type="button" variant="ghost" size="icon" onClick={() => removePost(idx)} className="h-6 w-6">
                   <Trash2 className="h-3 w-3" />

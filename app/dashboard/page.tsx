@@ -27,15 +27,12 @@ async function getDashboardStats() {
     // Fetch all counts in simple, direct queries
     const guardsResult = await sql`SELECT COUNT(*) as count FROM guards`
     const totalGuards = Number(guardsResult[0]?.count || 0)
-    console.log("[v0] Total guards:", totalGuards)
 
     const sitesResult = await sql`SELECT COUNT(*) as count FROM sites`
     const totalSites = Number(sitesResult[0]?.count || 0)
-    console.log("[v0] Total sites:", totalSites)
 
     const clientsResult = await sql`SELECT COUNT(*) as count FROM clients`
     const totalClients = Number(clientsResult[0]?.count || 0)
-    console.log("[v0] Total clients:", totalClients)
 
     // For assignments, use simpler query
     const assignmentsResult = await sql`SELECT COUNT(*) as count FROM assignments`
@@ -51,8 +48,6 @@ async function getDashboardStats() {
     // Pending leaves
     const leavesResult = await sql`SELECT COUNT(*) as count FROM leave_requests`
     const pendingLeaves = Number(leavesResult[0]?.count || 0)
-
-    console.log("[v0] Dashboard stats retrieved:", { totalGuards, totalSites, totalClients, totalAssignments })
 
     return {
       totalGuards,
@@ -88,7 +83,6 @@ async function getGuardsWithStatus() {
       ORDER BY first_name, last_name
       LIMIT 5
     `
-    console.log("[v0] Guards fetched:", guards.length)
     return guards
   } catch (error) {
     console.error("[v0] Error fetching guards:", error)
