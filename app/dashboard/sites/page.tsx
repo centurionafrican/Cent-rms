@@ -33,6 +33,7 @@ type Site = {
   site_status: string
   guards_needed: number
   created_at: string
+  posts?: Post[]
 }
 
 type SiteGuard = {
@@ -455,6 +456,24 @@ export default function SitesPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Posts Section */}
+              {selectedSite?.posts && selectedSite.posts.length > 0 && (
+                <div className="border-t pt-6">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold">Site Posts</h3>
+                    <p className="text-sm text-muted-foreground">{selectedSite.posts.length} post{selectedSite.posts.length !== 1 ? "s" : ""} at this site</p>
+                  </div>
+                  <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                    {selectedSite.posts.map((post, idx) => (
+                      <div key={post.id || `post-${idx}`} className="p-3 bg-muted rounded-lg border">
+                        <p className="font-medium text-sm">{post.name}</p>
+                        {post.post_type && <p className="text-xs text-muted-foreground mt-1">{post.post_type}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Guard Assignments Section */}
               <div className="border-t pt-6">

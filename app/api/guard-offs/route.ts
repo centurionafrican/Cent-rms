@@ -10,6 +10,7 @@ export async function GET(request: Request) {
     const guardId = searchParams.get("guard_id")
     const from    = searchParams.get("from")
     const to      = searchParams.get("to")
+    const user = await getSession()
 
     if (user && user.role === "guard") {
       // Guard sees only their own offs
