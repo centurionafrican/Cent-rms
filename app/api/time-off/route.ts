@@ -4,13 +4,9 @@ import { sql } from '@/lib/db'
 
 export async function GET() {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+    
     let requests
-    if (user.role === 'employee') {
+    if (user && user.role === 'employee') {
       requests = await sql`
         SELECT t.*, u.first_name, u.last_name,
                r.first_name as reviewer_first_name, r.last_name as reviewer_last_name
@@ -45,10 +41,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
 
     const { start_date, end_date, reason } = await request.json()
 

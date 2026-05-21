@@ -33,6 +33,7 @@ type Site = {
   site_status: string
   guards_needed: number
   created_at: string
+  posts?: Post[]
 }
 
 type SiteGuard = {
@@ -44,6 +45,12 @@ type SiteGuard = {
   date_to: string
   shift_name: string
   days_assigned: number
+}
+
+type Post = {
+  id?: number
+  name: string
+  post_type?: string
 }
 
 export default function SitesPage() {
@@ -61,6 +68,8 @@ export default function SitesPage() {
   const [showAllSites, setShowAllSites] = useState(false)
   const [loadingGuards, setLoadingGuards] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [posts, setPosts] = useState<Post[]>([])
+  const [newPost, setNewPost] = useState("")
   const [formData, setFormData] = useState({
     name: "", address: "", contact_person: "", contact_phone: "",
     client_id: "", site_status: "active", guards_needed: "1",
@@ -72,17 +81,20 @@ export default function SitesPage() {
   async function fetchSites() {
     try {
       const res = await fetch("/api/sites")
+      if (!res.ok) throw new Error("Failed to fetch sites")
       const data = await res.json()
-      setSites(data)
-    } catch (e) { console.error(e) }
+      setSites(Array.isArray(data) ? data : data.sites || [])
+    } catch (e) { console.error("Error fetching sites:", e) }
     finally { setLoading(false) }
   }
 
   async function fetchClients() {
     try {
       const res = await fetch("/api/clients")
-      if (res.ok) { const data = await res.json(); setClients(data.clients || []) }
-    } catch (e) { console.error(e) }
+      if (!res.ok) throw new Error("Failed to fetch clients")
+      const data = await res.json()
+      setClients(Array.isArray(data) ? data : data.clients || [])
+    } catch (e) { console.error("Error fetching clients:", e) }
   }
 
   async function fetchSiteGuards(siteId: number) {
@@ -105,9 +117,10 @@ export default function SitesPage() {
         body: JSON.stringify({
           ...formData, client_id: formData.client_id ? Number(formData.client_id) : null,
           guards_needed: Number(formData.guards_needed) || 1, is_active: formData.site_status !== "inactive",
+          posts: posts.length > 0 ? posts : undefined,
         }),
       })
-      if (res.ok) { setIsCreateOpen(false); resetForm(); fetchSites() }
+      if (res.ok) { setIsCreateOpen(false); resetForm(); setPosts([]); fetchSites() }
     } catch (e) { console.error(e) }
     finally { setSaving(false) }
   }
@@ -121,9 +134,10 @@ export default function SitesPage() {
         body: JSON.stringify({
           ...formData, client_id: formData.client_id ? Number(formData.client_id) : null,
           guards_needed: Number(formData.guards_needed) || 1, is_active: formData.site_status !== "inactive",
+          posts: posts.length > 0 ? posts : undefined,
         }),
       })
-      if (res.ok) { setIsEditOpen(false); setSelectedSite(null); resetForm(); fetchSites() }
+      if (res.ok) { setIsEditOpen(false); setSelectedSite(null); resetForm(); setPosts([]); fetchSites() }
     } catch (e) { console.error(e) }
     finally { setSaving(false) }
   }
@@ -136,22 +150,58 @@ export default function SitesPage() {
     } catch (e) { console.error(e) }
   }
 
-  function resetForm() {
-    setFormData({ name: "", address: "", contact_person: "", contact_phone: "", client_id: "", site_status: "active", guards_needed: "1" })
+  function addPost() {
+    if (newPost.trim()) {
+      setPosts([...posts, { name: newPost }])
+      setNewPost("")
+    }
   }
 
-  function openEdit(site: Site) {
+  function removePost(index: number) {
+    setPosts(posts.filter((_, i) => i !== index))
+  }
+
+  function resetForm() {
+    setFormData({ name: "", address: "", contact_person: "", contact_phone: "", client_id: "", site_status: "active", guards_needed: "1" })
+    setPosts([])
+    setNewPost("")
+  }
+
+  async function openEdit(site: Site) {
     setSelectedSite(site)
     setFormData({
       name: site.name, address: site.address || "", contact_person: site.contact_person || "",
       contact_phone: site.contact_phone || "", client_id: site.client_id ? String(site.client_id) : "",
       site_status: site.site_status || "active", guards_needed: String(site.guards_needed || 1),
     })
+    // Fetch posts for this site
+    try {
+      const res = await fetch(`/api/sites/${site.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setPosts(data.posts || [])
+      }
+    } catch (e) {
+      console.error("Error fetching site posts:", e)
+      setPosts([])
+    }
     setIsEditOpen(true)
   }
 
-  function openDrillDown(site: Site) {
-    setSelectedSite(site)
+  async function openDrillDown(site: Site) {
+    // Fetch full site data including posts
+    try {
+      const res = await fetch(`/api/sites/${site.id}`)
+      if (res.ok) {
+        const fullSite = await res.json()
+        setSelectedSite(fullSite)
+      } else {
+        setSelectedSite(site)
+      }
+    } catch (e) {
+      console.error("Error fetching site:", e)
+      setSelectedSite(site)
+    }
     fetchSiteGuards(site.id)
     setIsDrillDownOpen(true)
   }
@@ -235,6 +285,25 @@ export default function SitesPage() {
           <Label>Guards Needed</Label>
           <Input type="number" min="1" value={formData.guards_needed} onChange={(e) => setFormData({ ...formData, guards_needed: e.target.value })} />
         </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Site Posts (e.g., Gate, Main Entrance, Back Entrance)</Label>
+        <div className="flex gap-2">
+          <Input value={newPost} onChange={(e) => setNewPost(e.target.value)} placeholder="Enter post name..." onKeyPress={(e) => e.key === "Enter" && addPost()} />
+          <Button type="button" onClick={addPost} variant="outline">Add Post</Button>
+        </div>
+        {posts.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {posts.map((post, idx) => (
+              <div key={post.id || `post-${idx}`} className="flex items-center justify-between bg-muted p-2 rounded text-sm">
+                <span>{post.name}</span>
+                <Button type="button" variant="ghost" size="icon" onClick={() => removePost(idx)} className="h-6 w-6">
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -399,6 +468,24 @@ export default function SitesPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Posts Section */}
+              {selectedSite?.posts && selectedSite.posts.length > 0 && (
+                <div className="border-t pt-6">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold">Site Posts</h3>
+                    <p className="text-sm text-muted-foreground">{selectedSite.posts.length} post{selectedSite.posts.length !== 1 ? "s" : ""} at this site</p>
+                  </div>
+                  <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                    {selectedSite.posts.map((post, idx) => (
+                      <div key={post.id || `post-${idx}`} className="p-3 bg-muted rounded-lg border">
+                        <p className="font-medium text-sm">{post.name}</p>
+                        {post.post_type && <p className="text-xs text-muted-foreground mt-1">{post.post_type}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Guard Assignments Section */}
               <div className="border-t pt-6">

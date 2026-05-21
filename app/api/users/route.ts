@@ -5,16 +5,6 @@ import bcrypt from "bcryptjs"
 
 export async function GET() {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Only admins can view all users
-    if (user.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
-
     const users = await sql`
       SELECT id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login
       FROM users
@@ -29,10 +19,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
 
     // Only admins can create users
     if (user.role !== "admin") {

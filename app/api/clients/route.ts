@@ -1,12 +1,8 @@
 import { sql } from "@/lib/db"
-import { getSession } from "@/lib/auth"
 import { NextResponse } from "next/server"
 
 export async function GET() {
   try {
-    const user = await getSession()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
     const clients = await sql`
       SELECT c.*, 
         CAST((SELECT COUNT(*) FROM sites s WHERE s.client_id = c.id) AS INTEGER) as site_count,
@@ -23,19 +19,20 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await getSession()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const body = await request.json()
+    const { name, contact_person, contact_email, contact_phone, address } = body
 
-    const { name, contact_person, contact_email, contact_phone, address, city, notes } = await request.json()
-
-    if (!name) return NextResponse.json({ error: "Client name is required" }, { status: 400 })
+    if (!name) {
+      return NextResponse.json({ error: "Client name is required" }, { status: 400 })
+    }
 
     const result = await sql`
-      INSERT INTO clients (name, contact_person, contact_email, contact_phone, address, city, notes)
-      VALUES (${name}, ${contact_person || null}, ${contact_email || null}, ${contact_phone || null}, ${address || null}, ${city || null}, ${notes || null})
+      INSERT INTO clients (name, contact_person, contact_email, contact_phone, address)
+      VALUES (${name}, ${contact_person || null}, ${contact_email || null}, ${contact_phone || null}, ${address || null})
       RETURNING *
     `
-    return NextResponse.json({ client: result[0] })
+
+    return NextResponse.json(result[0], { status: 201 })
   } catch (error) {
     console.error("Error creating client:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

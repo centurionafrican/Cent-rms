@@ -23,61 +23,71 @@ import Link from "next/link"
 import { EmployeeRosterTable } from "./components/employee-roster-table"
 
 async function getDashboardStats() {
-  const guards = await sql`SELECT COUNT(*) as count FROM guards WHERE status = 'active'`
-  const sites = await sql`SELECT COUNT(*) as count FROM sites WHERE is_active = true`
-  const today = new Date().toISOString().split("T")[0]
-  const todayShifts = await sql`SELECT COUNT(*) as count FROM assignments WHERE date::date = ${today}::date`
-  const pendingAssignments = await sql`SELECT COUNT(*) as count FROM assignments WHERE status = 'scheduled' AND date::date >= ${today}::date`
-  
-  // Calculate coverage rate (guards assigned vs total shifts needed)
-  const totalShiftsNeeded = await sql`SELECT COUNT(*) as count FROM assignments WHERE date::date = ${today}::date`
-  const assignedShifts = await sql`SELECT COUNT(*) as count FROM assignments WHERE date::date = ${today}::date AND guard_id IS NOT NULL`
-  const coverageRate = Number(totalShiftsNeeded[0]?.count) > 0 
-    ? Math.round((Number(assignedShifts[0]?.count) / Number(totalShiftsNeeded[0]?.count)) * 100)
-    : 100
+  try {
+    // Fetch all counts in simple, direct queries
+    const guardsResult = await sql`SELECT COUNT(*) as count FROM guards`
+    const totalGuards = Number(guardsResult[0]?.count || 0)
 
-  // Open incidents
-  const openIncidents = await sql`SELECT COUNT(*) as count FROM incidents WHERE status = 'open'`
-  
-  // Pending leaves
-  const pendingLeaves = await sql`SELECT COUNT(*) as count FROM leave_requests WHERE status = 'pending'`
+    const sitesResult = await sql`SELECT COUNT(*) as count FROM sites`
+    const totalSites = Number(sitesResult[0]?.count || 0)
 
-  // Total clients
-  const totalClients = await sql`SELECT COUNT(*) as count FROM clients`
+    const clientsResult = await sql`SELECT COUNT(*) as count FROM clients`
+    const totalClients = Number(clientsResult[0]?.count || 0)
 
-  return {
-    totalGuards: Number(guards[0]?.count || 0),
-    activeSites: Number(sites[0]?.count || 0),
-    todayShifts: Number(todayShifts[0]?.count || 0),
-    pendingAssignments: Number(pendingAssignments[0]?.count || 0),
-    coverageRate,
-    openIncidents: Number(openIncidents[0]?.count || 0),
-    pendingLeaves: Number(pendingLeaves[0]?.count || 0),
-    totalClients: Number(totalClients[0]?.count || 0),
+    // For assignments, use simpler query
+    const assignmentsResult = await sql`SELECT COUNT(*) as count FROM assignments`
+    const totalAssignments = Number(assignmentsResult[0]?.count || 0)
+    
+    const pendingAssignmentsResult = await sql`SELECT COUNT(*) as count FROM assignments WHERE status = 'pending'`
+    const pendingAssignments = Number(pendingAssignmentsResult[0]?.count || 0)
+
+    // Open incidents
+    const incidentsResult = await sql`SELECT COUNT(*) as count FROM incidents`
+    const openIncidents = Number(incidentsResult[0]?.count || 0)
+    
+    // Pending leaves
+    const leavesResult = await sql`SELECT COUNT(*) as count FROM leave_requests`
+    const pendingLeaves = Number(leavesResult[0]?.count || 0)
+
+    return {
+      totalGuards,
+      activeSites: totalSites,
+      todayShifts: totalAssignments,
+      pendingAssignments,
+      coverageRate: totalAssignments > 0 ? Math.round((pendingAssignments / totalAssignments) * 100) : 100,
+      openIncidents,
+      pendingLeaves,
+      totalClients,
+    }
+  } catch (error) {
+    console.error("[v0] Dashboard stats error:", error)
+    return {
+      totalGuards: 0,
+      activeSites: 0,
+      todayShifts: 0,
+      pendingAssignments: 0,
+      coverageRate: 0,
+      openIncidents: 0,
+      pendingLeaves: 0,
+      totalClients: 0,
+    }
   }
 }
 
 async function getGuardsWithStatus() {
-  const today = new Date().toISOString().split("T")[0]
-  
-  const guards = await sql`
-    SELECT 
-      g.*,
-      s.name as shift_name,
-      site.name as site_name,
-      a.status as assignment_status,
-      att.time_in,
-      att.time_out,
-      att.status as attendance_status
-    FROM guards g
-    LEFT JOIN assignments a ON a.guard_id = g.id AND a.date::date = ${today}::date
-    LEFT JOIN shifts s ON s.id = a.shift_id
-    LEFT JOIN sites site ON site.id = a.site_id
-    LEFT JOIN attendance att ON att.assignment_id = a.id
-    WHERE g.status = 'active'
-    ORDER BY g.first_name, g.last_name
-  `
-  return guards
+  try {
+    // Get top 5 active guards for the employee roster
+    const guards = await sql`
+      SELECT id, first_name, last_name, email, phone, status, employee_id
+      FROM guards
+      ORDER BY first_name, last_name
+      LIMIT 5
+    `
+    return guards
+  } catch (error) {
+    console.error("[v0] Error fetching guards:", error)
+    return []
+  }
 }
 
 export default async function DashboardPage() {

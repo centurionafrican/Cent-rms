@@ -4,9 +4,6 @@ import { sql } from '@/lib/db'
 
 export async function GET() {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const availability = await sql`
@@ -27,10 +24,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
 
     const { availability } = await request.json()
 

@@ -9,38 +9,6 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getSession()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
-    const { id } = await params
-    const body = await request.json()
-    const { action, ops_notes, new_guard_id } = body
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://centuriongrp.rw"
-
-    // Fetch existing request with details
-    const [req] = await sql`
-      SELECT acr.*,
-        cg.first_name || ' ' || cg.last_name AS current_guard_name,
-        cg.email AS current_guard_email,
-        rg.first_name || ' ' || rg.last_name AS requested_guard_name,
-        a.date AS assignment_date,
-        s.name AS site_name,
-        sh.name AS shift_name
-      FROM assignment_change_requests acr
-      JOIN assignments a ON a.id = acr.assignment_id
-      JOIN sites s ON s.id = a.site_id
-      JOIN shifts sh ON sh.id = a.shift_id
-      JOIN guards cg ON cg.id = acr.current_guard_id
-      LEFT JOIN guards rg ON rg.id = acr.requested_guard_id
-      WHERE acr.id = ${Number(id)}
-    `
-    if (!req) return NextResponse.json({ error: "Request not found" }, { status: 404 })
-
-    // ── Ops Manager: approve or reject ───────────────────────────────────
-    if (action === "approve" || action === "reject") {
-      if (!["operations_manager", "admin"].includes(user.role)) {
-        return NextResponse.json({ error: "Only Operations Managers can approve/reject" }, { status: 403 })
-      }
       if (req.status !== "pending") {
         return NextResponse.json({ error: "Request is not pending" }, { status: 400 })
       }

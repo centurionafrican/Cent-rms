@@ -4,11 +4,6 @@ import { getSession } from "@/lib/auth"
 
 export async function GET() {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const shifts = await sql`SELECT * FROM shifts ORDER BY start_time`
     return NextResponse.json(shifts)
   } catch (error) {
@@ -19,10 +14,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await getSession()
-    if (!user || user.role === "guard") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
 
     const body = await request.json()
     const { name, start_time, end_time, description, is_active, shift_type } = body

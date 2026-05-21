@@ -1,17 +1,11 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
-import { getSession } from "@/lib/auth"
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const { id } = await params
     const sites = await sql`SELECT * FROM sites WHERE id = ${id}`
 
@@ -19,7 +13,10 @@ export async function GET(
       return NextResponse.json({ error: "Site not found" }, { status: 404 })
     }
 
-    return NextResponse.json(sites[0])
+    // Get posts for this site
+    const posts = await sql`SELECT * FROM posts WHERE site_id = ${id} ORDER BY name`
+
+    return NextResponse.json({ ...sites[0], posts: posts || [] })
   } catch (error) {
     console.error("Error fetching site:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -31,14 +28,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getSession()
-    if (!user || user.role === "guard") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const { id } = await params
     const body = await request.json()
-    const { name, address, contact_person, contact_phone, is_active, client_id, site_status, guards_needed } = body
+    const { name, address, contact_person, contact_phone, is_active, client_id, site_status, guards_needed, posts } = body
 
     const result = await sql`
       UPDATE sites SET
@@ -59,6 +51,21 @@ export async function PUT(
       return NextResponse.json({ error: "Site not found" }, { status: 404 })
     }
 
+    // Handle posts update if provided
+    if (posts && Array.isArray(posts)) {
+      // Delete old posts and add new ones
+      await sql`DELETE FROM posts WHERE site_id = ${id}`
+      
+      for (const post of posts) {
+        if (post.name) {  // Only create if name exists
+          await sql`
+            INSERT INTO posts (site_id, name, post_type, status)
+            VALUES (${id}, ${post.name}, ${post.post_type || null}, 'active')
+          `
+        }
+      }
+    }
+
     return NextResponse.json(result[0])
   } catch (error) {
     console.error("Error updating site:", error)
@@ -71,10 +78,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getSession()
-    if (!user || user.role === "guard") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
 
     const { id } = await params
 

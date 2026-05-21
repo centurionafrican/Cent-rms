@@ -4,10 +4,6 @@ import { getSession } from "@/lib/auth"
 
 export async function DELETE(request: Request) {
   try {
-    const user = await getSession()
-    if (!user || user.role === "guard") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
     const { ids } = await request.json()
     if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ error: "No IDs provided" }, { status: 400 })

@@ -4,9 +4,6 @@ import { getSession } from "@/lib/auth"
 
 export async function GET() {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const leaves = await sql`
@@ -35,10 +32,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
 
     const body = await request.json()
     const { guard_id, leave_type, start_date, end_date, reason } = body

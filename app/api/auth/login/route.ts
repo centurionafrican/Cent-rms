@@ -18,8 +18,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: result.error }, { status: 401 })
     }
 
-    return NextResponse.json({
+    // Create response with user data and token
+    const response = NextResponse.json({
       success: true,
+      token: result.token,
       user: {
         id: result.user!.id,
         email: result.user!.email,
@@ -27,6 +29,21 @@ export async function POST(request: Request) {
         role: result.user!.role,
       },
     })
+
+    // Set session cookie - this will be captured by middleware
+    if (result.token) {
+      response.cookies.set({
+        name: "session_id",
+        value: result.token,
+        httpOnly: true,
+        secure: false, // Allow localhost in development
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+        path: "/",
+      })
+    }
+
+    return response
   } catch (error) {
     console.error("Login error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

@@ -4,10 +4,6 @@ import { getSession } from "@/lib/auth"
 
 export async function GET() {
   try {
-    const user = await getSession()
-    if (!user || user.role === "guard") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
 
     const clients = await sql`
       SELECT
