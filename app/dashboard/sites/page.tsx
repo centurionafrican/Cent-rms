@@ -188,8 +188,20 @@ export default function SitesPage() {
     setIsEditOpen(true)
   }
 
-  function openDrillDown(site: Site) {
-    setSelectedSite(site)
+  async function openDrillDown(site: Site) {
+    // Fetch full site data including posts
+    try {
+      const res = await fetch(`/api/sites/${site.id}`)
+      if (res.ok) {
+        const fullSite = await res.json()
+        setSelectedSite(fullSite)
+      } else {
+        setSelectedSite(site)
+      }
+    } catch (e) {
+      console.error("Error fetching site:", e)
+      setSelectedSite(site)
+    }
     fetchSiteGuards(site.id)
     setIsDrillDownOpen(true)
   }

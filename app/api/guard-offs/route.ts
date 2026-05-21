@@ -3,7 +3,8 @@ import { sql } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import { sendEmail, guardOffNotificationEmail } from "@/lib/email"
 
-// GET — list offs (roster_manager sees all, guard sees own)
+// GET — list offs (roster_manager sees all, guard sees their own)
+// Staff can see all guard offs
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)

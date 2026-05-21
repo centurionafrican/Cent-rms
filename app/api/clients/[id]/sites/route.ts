@@ -4,11 +4,12 @@ import { NextResponse } from "next/server"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
 
     const sites = await sql`
       SELECT id, name, address, guards_needed, site_status, contact_person, contact_phone
       FROM sites
-      WHERE client_id = ${id}
+      WHERE client_id = ${Number(id)}
       ORDER BY name ASC
     `
 
