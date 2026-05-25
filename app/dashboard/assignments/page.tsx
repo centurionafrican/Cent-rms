@@ -44,9 +44,6 @@ async function getShifts() {
 }
 
 export default async function AssignmentsPage() {
-  const user = await getSession()
-  if (!user) return null
-
   const [assignments, guards, sites, shifts] = await Promise.all([
     getAssignments(),
     getGuards(),
