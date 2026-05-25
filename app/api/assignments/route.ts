@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
-import { getSession } from "@/lib/auth"
 import { sendEmail, assignmentNotificationEmail } from "@/lib/email"
 
 export async function GET(request: Request) {
