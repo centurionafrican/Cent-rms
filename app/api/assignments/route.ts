@@ -74,11 +74,9 @@ export async function POST(request: Request) {
       RETURNING *
     `
 
-    // Derive the base URL from the incoming request so the portal link is always correct
     const reqUrl = new URL(request.url)
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${reqUrl.protocol}//${reqUrl.host}`
 
-    // Send assignment notification email if guard has an email address
     try {
       const guardInfo = await sql`
         SELECT g.first_name, g.last_name, g.email,
@@ -106,7 +104,6 @@ export async function POST(request: Request) {
         })
       }
     } catch (emailErr) {
-      // Don't fail the assignment creation if email fails
       console.error("[assignments] Email notification failed:", emailErr)
     }
 
