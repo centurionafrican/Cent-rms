@@ -972,11 +972,22 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Not specified</SelectItem>
-                      <SelectItem value="Gate">Gate</SelectItem>
-                      <SelectItem value="Patrol">Patrol</SelectItem>
-                      <SelectItem value="Control Room">Control Room</SelectItem>
+                      {selectedSitePosts && selectedSitePosts.length > 0 ? (
+                        selectedSitePosts.map((post: Post) => (
+                          <SelectItem key={post.id || post.name} value={post.name}>
+                            {post.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="General">General</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
+                  {selectedSitePosts && selectedSitePosts.length > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      {selectedSitePosts.length} position{selectedSitePosts.length !== 1 ? "s" : ""} available at this site
+                    </div>
+                  )}
                 </div>
                 <div className="grid gap-2">
                   <Label className="font-semibold">Assignment Date *</Label>

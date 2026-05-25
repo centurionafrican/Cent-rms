@@ -98,13 +98,6 @@ async function getReportData() {
 }
 
 export default async function ReportsPage() {
-  const user = await getSession()
-  if (!user) return null
-
-  if (user.role === "guard") {
-    redirect("/dashboard")
-  }
-
   const reportData = await getReportData()
 
   return (

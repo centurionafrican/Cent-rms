@@ -26,9 +26,6 @@ async function getGuards() {
 }
 
 export default async function LeavesPage() {
-  const user = await getSession()
-  if (!user) return null
-
   const [leaveRequests, guards] = await Promise.all([
     getLeaveRequests(),
     getGuards(),
@@ -46,8 +43,8 @@ export default async function LeavesPage() {
       <LeavesList 
         initialLeaves={leaveRequests} 
         guards={guards}
-        currentUserId={user.id}
-        currentUserRole={user.role}
+        currentUserId={undefined}
+        currentUserRole="admin"
       />
     </div>
   )
