@@ -78,7 +78,7 @@ async function getGuardsWithStatus() {
   try {
     // Get top 5 active guards for the employee roster
     const guards = await sql`
-      SELECT id, first_name, last_name, email, phone, status, employee_id
+      SELECT id, first_name, last_name, email, phone, status
       FROM guards
       ORDER BY first_name, last_name
       LIMIT 5
