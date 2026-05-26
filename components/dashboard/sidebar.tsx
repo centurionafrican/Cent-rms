@@ -35,7 +35,7 @@ const navigation = [
   { name: "Assignments", href: "/dashboard/assignments", icon: CalendarCheck },
   { name: "Assignment Changes", href: "/dashboard/assignment-change-requests", icon: ArrowLeftRight },
   { name: "Guard Off Days", href: "/dashboard/guard-offs", icon: CalendarOff },
-  { name: "Time & Attendance", href: "/dashboard/attendance", icon: Timer },
+  { name: "Time & Attendance", href: "/dashboard/time-attendance", icon: Timer },
   { name: "Leaves", href: "/dashboard/leaves", icon: CalendarX },
   { name: "Incidents", href: "/dashboard/incidents", icon: AlertTriangle },
   { name: "Guard Portal", href: "/dashboard/guard-portal", icon: Contact },
