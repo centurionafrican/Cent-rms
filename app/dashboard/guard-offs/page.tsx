@@ -85,7 +85,7 @@ export default function GuardOffsPage() {
     }).catch(() => {})
   }, [])
 
-  const canManage = currentUser === null || ["roster_manager", "admin"].includes(currentUser.role)
+  const canManage = !currentUser || currentUser.role === "admin" || currentUser.role === "roster_manager"
 
   const filtered = offs.filter((o) => {
     if (search && !o.guard_name.toLowerCase().includes(search.toLowerCase()) && !o.reason.toLowerCase().includes(search.toLowerCase())) return false

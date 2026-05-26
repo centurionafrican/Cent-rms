@@ -112,11 +112,11 @@ export default function AssignmentChangeRequestsPage() {
     }).catch(() => {})
   }, [isNewOpen, assignmentSearch])
 
-  const role = currentUser?.role ?? ""
-  // Show buttons while user is still loading (currentUser === null), hide only if confirmed non-permitted role
-  const canRequest  = currentUser === null || ["coordinator", "roster_manager", "admin"].includes(role)
-  const canApprove  = currentUser === null || ["operations_manager", "admin"].includes(role)
-  const canExecute  = currentUser === null || ["roster_manager", "admin"].includes(role)
+  const role = currentUser?.role ?? "admin"
+  // Always show buttons for admin/manager roles; show to all while loading
+  const canRequest  = !currentUser || role === "admin" || ["coordinator", "roster_manager"].includes(role)
+  const canApprove  = !currentUser || role === "admin" || role === "operations_manager"
+  const canExecute  = !currentUser || role === "admin" || role === "roster_manager"
 
   const filtered = requests.filter((r) => {
     const matchTab = tab === "all" || r.status === tab

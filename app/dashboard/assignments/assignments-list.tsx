@@ -929,7 +929,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                   <Label className="font-semibold">Security Site Location *</Label>
                   <Select
                     value={formData.site_id || ""}
-                    onValueChange={(value) => setFormData({ ...formData, site_id: value })}
+                    onValueChange={handleSiteSelection}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select the site for assignment" />
