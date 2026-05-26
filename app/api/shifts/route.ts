@@ -14,7 +14,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-
     const body = await request.json()
     const { name, start_time, end_time, description, is_active, shift_type } = body
 

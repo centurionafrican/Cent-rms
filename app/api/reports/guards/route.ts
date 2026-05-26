@@ -4,7 +4,6 @@ import { getSession } from "@/lib/auth"
 
 export async function GET() {
   try {
-
     const guards = await sql`
       SELECT 
         ROW_NUMBER() OVER (ORDER BY first_name, last_name) AS "#",

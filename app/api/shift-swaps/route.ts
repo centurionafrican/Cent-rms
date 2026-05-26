@@ -4,7 +4,6 @@ import { sql } from '@/lib/db'
 
 export async function GET() {
   try {
-    
     let requests
     if (user && user.role === 'employee') {
       requests = await sql`
@@ -55,7 +54,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-
     const { original_shift_id, target_user_id, notes } = await request.json()
 
     if (!original_shift_id) {

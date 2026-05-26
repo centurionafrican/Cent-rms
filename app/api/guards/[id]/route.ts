@@ -7,8 +7,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    }
-
     const { id } = await params
     const guards = await sql`SELECT * FROM guards WHERE id = ${id}`
 
@@ -28,7 +26,6 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-
     const { id } = await params
     const body = await request.json()
     const { first_name, last_name, email, phone, address, title, status, id_number, annual_leave_days, date_joined, guard_title, gender, education_level, languages_spoken, discipline, special_skills, maternity_status } = body
@@ -73,7 +70,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-
     const { id } = await params
 
     await sql`DELETE FROM guards WHERE id = ${id}`

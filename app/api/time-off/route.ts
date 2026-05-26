@@ -4,7 +4,6 @@ import { sql } from '@/lib/db'
 
 export async function GET() {
   try {
-    
     let requests
     if (user && user.role === 'employee') {
       requests = await sql`
@@ -41,7 +40,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-
     const { start_date, end_date, reason } = await request.json()
 
     if (!start_date || !end_date) {

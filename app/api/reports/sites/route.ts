@@ -4,7 +4,6 @@ import { getSession } from "@/lib/auth"
 
 export async function GET() {
   try {
-
     const sites = await sql`
       SELECT 
         s.id, s.name, s.address, s.contact_person, s.contact_phone, s.is_active, s.created_at,

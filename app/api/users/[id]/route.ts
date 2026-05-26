@@ -7,8 +7,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    }
-
     const { id } = await params
 
     const result = await sql`
@@ -33,7 +31,6 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-
     // Only admins can update users
     if (user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -79,7 +76,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-
     // Only admins can delete users
     if (user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })

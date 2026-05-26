@@ -19,7 +19,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-
     // Only admins can create users
     if (user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })

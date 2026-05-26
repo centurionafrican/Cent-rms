@@ -4,8 +4,6 @@ import { sql } from '@/lib/db'
 
 export async function GET() {
   try {
-    }
-
     const availability = await sql`
       SELECT * FROM availability
       WHERE user_id = ${user.id}
@@ -24,7 +22,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-
     const { availability } = await request.json()
 
     if (!Array.isArray(availability)) {

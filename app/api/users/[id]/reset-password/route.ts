@@ -8,7 +8,6 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-
     // Only admins can reset passwords
     if (user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })

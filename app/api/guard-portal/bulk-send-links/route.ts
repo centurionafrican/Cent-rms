@@ -6,7 +6,6 @@ import { getSession } from "@/lib/auth"
 
 export async function POST(request: Request) {
   try {
-
     const reqUrl = new URL(request.url)
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${reqUrl.protocol}//${reqUrl.host}`
 

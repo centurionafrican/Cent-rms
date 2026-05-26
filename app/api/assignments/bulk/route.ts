@@ -4,7 +4,6 @@ import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
   try {
-
     // Generate all dates in the range
     const dates: string[] = []
     const start = new Date(date_from)

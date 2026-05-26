@@ -4,8 +4,6 @@ import { getSession } from "@/lib/auth"
 
 export async function GET() {
   try {
-    }
-
     const leaves = await sql`
       SELECT 
         lr.*,
@@ -32,7 +30,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-
     const body = await request.json()
     const { guard_id, leave_type, start_date, end_date, reason } = body
 

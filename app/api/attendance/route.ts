@@ -4,7 +4,6 @@ import { getSession } from "@/lib/auth"
 
 export async function POST(request: Request) {
   try {
-
     const body = await request.json()
     const { assignment_id, action } = body
 

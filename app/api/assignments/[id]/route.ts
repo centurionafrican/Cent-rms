@@ -7,7 +7,6 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-
     const { id } = await params
     const body = await request.json()
     const { status, reliever_id, notes } = body
@@ -37,7 +36,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-
     const { id } = await params
 
     await sql`DELETE FROM assignments WHERE id = ${id}`

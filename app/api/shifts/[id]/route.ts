@@ -7,8 +7,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    }
-
     const { id } = await params
     const shifts = await sql`SELECT * FROM shifts WHERE id = ${id}`
 
@@ -28,7 +26,6 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-
     const { id } = await params
     const body = await request.json()
     const { name, start_time, end_time, description, is_active, shift_type } = body
@@ -61,7 +58,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-
     const { id } = await params
 
     await sql`DELETE FROM shifts WHERE id = ${id}`

@@ -19,7 +19,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-
     const body = await request.json()
     const { name, address, contact_person, contact_phone, is_active, client_id, site_status, guards_needed, posts } = body
 
