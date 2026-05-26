@@ -45,7 +45,8 @@ export default function TimeAttendancePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <main className="min-h-screen">
+      <div className="container mx-auto py-6 px-4 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Time & Attendance</h1>
         <p className="text-muted-foreground">
@@ -91,13 +92,13 @@ export default function TimeAttendancePage() {
 
       {/* Filters */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
-        <div className="flex-1">
+        <div className="flex-1 flex items-center gap-2 max-w-sm">
+          <Search className="h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search guards or sites..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="max-w-sm"
-            prefix={<Search className="h-4 w-4" />}
+            className="flex-1 border-0 bg-transparent"
           />
         </div>
         <Input
@@ -164,6 +165,7 @@ export default function TimeAttendancePage() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </main>
   )
 }
