@@ -67,7 +67,7 @@ export async function GET(request: Request) {
     const annualDays = Number(guard[0].annual_leave_days || 21)
 
     return NextResponse.json({
-      guard: guardResult[0],
+      guard: guard[0],
       assignments,
       leaves,
       leaveBalance: {

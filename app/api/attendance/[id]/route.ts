@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
-import { getSession } from "@/lib/auth"
 
 export async function PATCH(
   request: Request,
@@ -9,12 +8,13 @@ export async function PATCH(
   try {
     const { id } = await params
     const body = await request.json()
-    const { action } = body
+    const { action, time_out } = body
 
-    if (action === "clock_out") {
+    // Handle direct time_out update or action-based clock out
+    if (time_out || action === "clock_out") {
       const result = await sql`
         UPDATE attendance SET
-          time_out = NOW(),
+          time_out = ${time_out || new Date().toISOString()},
           status = 'present'
         WHERE id = ${id}
         RETURNING *
