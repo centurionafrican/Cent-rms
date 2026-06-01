@@ -37,6 +37,7 @@ interface Assignment {
   guard_id: number
   guard_name: string
   site_name: string
+  shift_name: string
   date: string
 }
 
@@ -120,6 +121,55 @@ export default function TimeAttendancePage() {
         mutate(`/api/attendance?date=${dateFilter}&limit=500`)
         setIsClockOutOpen(false)
         setSelectedRecord(null)
+      } else {
+        toast.error("Failed to record clock out")
+      }
+    } catch {
+      toast.error("Error recording clock out")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDirectClockIn(assignmentId: number) {
+    setSaving(true)
+    try {
+      const res = await fetch("/api/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assignment_id: assignmentId,
+          time_in: new Date().toISOString(),
+          status: "present",
+          date: dateFilter,
+        }),
+      })
+      if (res.ok) {
+        toast.success("Clock in recorded successfully")
+        mutate(`/api/attendance?date=${dateFilter}&limit=500`)
+      } else {
+        toast.error("Failed to record clock in")
+      }
+    } catch {
+      toast.error("Error recording clock in")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDirectClockOut(attendanceId: number) {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/attendance/${attendanceId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          time_out: new Date().toISOString(),
+        }),
+      })
+      if (res.ok) {
+        toast.success("Clock out recorded successfully")
+        mutate(`/api/attendance?date=${dateFilter}&limit=500`)
       } else {
         toast.error("Failed to record clock out")
       }
@@ -312,6 +362,108 @@ export default function TimeAttendancePage() {
           className="w-full md:w-32"
         />
       </div>
+
+      {/* Assignments Table - Clock In/Out for each guard */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Guard Assignments - Clock In/Out</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {assignments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No assignments found for {dateFilter}</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Guard Name</TableHead>
+                    <TableHead>Site</TableHead>
+                    <TableHead>Shift</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Check-In</TableHead>
+                    <TableHead>Check-Out</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {assignments
+                    .filter((a: Assignment) => 
+                      a.guard_name?.toLowerCase().includes(search.toLowerCase()) ||
+                      a.site_name?.toLowerCase().includes(search.toLowerCase())
+                    )
+                    .map((assignment: Assignment) => {
+                      const attendanceRecord = records.find(
+                        (r: Attendance) => r.assignment_id === assignment.id
+                      )
+                      const isClockedIn = attendanceRecord?.time_in && !attendanceRecord?.time_out
+                      const isClockedOut = attendanceRecord?.time_in && attendanceRecord?.time_out
+                      
+                      return (
+                        <TableRow key={assignment.id}>
+                          <TableCell className="font-medium">{assignment.guard_name}</TableCell>
+                          <TableCell>{assignment.site_name}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {assignment.shift_name || "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                isClockedOut ? "default" :
+                                isClockedIn ? "secondary" : "outline"
+                              }
+                            >
+                              {isClockedOut ? "Completed" : isClockedIn ? "On Duty" : "Pending"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {attendanceRecord?.time_in 
+                              ? new Date(attendanceRecord.time_in).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) 
+                              : "—"}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {attendanceRecord?.time_out 
+                              ? new Date(attendanceRecord.time_out).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) 
+                              : "—"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              {!attendanceRecord?.time_in && (
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleDirectClockIn(assignment.id)}
+                                  disabled={saving}
+                                  className="gap-1"
+                                >
+                                  <LogIn className="h-3 w-3" />
+                                  Clock In
+                                </Button>
+                              )}
+                              {isClockedIn && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleDirectClockOut(attendanceRecord.id)}
+                                  disabled={saving}
+                                  className="gap-1"
+                                >
+                                  <LogOut className="h-3 w-3" />
+                                  Clock Out
+                                </Button>
+                              )}
+                              {isClockedOut && (
+                                <span className="text-sm text-green-600 font-medium">Done</span>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Attendance Table */}
       <Card>
