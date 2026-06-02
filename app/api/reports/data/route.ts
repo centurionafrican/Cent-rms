@@ -222,7 +222,8 @@ export async function GET(request: Request) {
     if (type === "sites") {
       const sites = await sql`
         SELECT s.*, c.name as client_name,
-          (SELECT COUNT(DISTINCT a.guard_id) FROM assignments a WHERE a.site_id = s.id AND a.date >= CURRENT_DATE) as assigned_guards
+          (SELECT COUNT(DISTINCT a.guard_id) FROM assignments a WHERE a.site_id = s.id AND a.date >= CURRENT_DATE) as assigned_guards,
+          (SELECT STRING_AGG(p.name, ', ') FROM posts p WHERE p.site_id = s.id) as posts
         FROM sites s
         LEFT JOIN clients c ON c.id = s.client_id
         ORDER BY s.name

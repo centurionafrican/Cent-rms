@@ -7,14 +7,15 @@ export async function GET() {
     const sites = await sql`
       SELECT 
         s.id, s.name, s.address, s.contact_person, s.contact_phone, s.is_active, s.created_at,
-        COUNT(DISTINCT a.guard_id) as assigned_guards
+        COUNT(DISTINCT a.guard_id) as assigned_guards,
+        (SELECT STRING_AGG(p.name, ', ') FROM posts p WHERE p.site_id = s.id) as posts
       FROM sites s
       LEFT JOIN assignments a ON a.site_id = s.id AND a.date = CURRENT_DATE
       GROUP BY s.id
       ORDER BY s.name
     `
 
-    const headers = ["ID", "Name", "Address", "Contact Person", "Contact Phone", "Active", "Assigned Guards", "Created At"]
+    const headers = ["ID", "Name", "Address", "Contact Person", "Contact Phone", "Active", "Assigned Guards", "Posts", "Created At"]
     const rows = sites.map(s => [
       s.id,
       s.name,
@@ -23,6 +24,7 @@ export async function GET() {
       s.contact_phone,
       s.is_active ? "Yes" : "No",
       s.assigned_guards,
+      s.posts || "None",
       s.created_at
     ])
 
