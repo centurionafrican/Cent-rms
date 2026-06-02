@@ -36,8 +36,13 @@ export default function LoginPage() {
         return
       }
 
+      // Store token in sessionStorage
+      if (data.user) {
+        sessionStorage.setItem("auth_token", data.token)
+        sessionStorage.setItem("user", JSON.stringify(data.user))
+      }
+
       router.push("/dashboard")
-      router.refresh()
     } catch {
       setError("An error occurred")
     } finally {

@@ -95,6 +95,13 @@ interface Site {
   id: number
   name: string
   guards_needed?: number
+  posts?: Post[]
+}
+
+interface Post {
+  id?: number
+  name: string
+  post_type?: string
 }
 
 interface Shift {
@@ -219,6 +226,8 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
   })
   const [weekAssignments, setWeekAssignments] = useState<Assignment[]>([])
   const [weekLoading, setWeekLoading] = useState(false)
+  const [selectedSitePosts, setSelectedSitePosts] = useState<Post[]>([])
+  const [selectedPostId, setSelectedPostId] = useState("")
 
   const weekDates = getWeekDates(weekStart)
 
@@ -674,6 +683,22 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
     setBulkRelievingGuards(guards.filter(g => g.status !== "inactive"))
   }
 
+  async function handleSiteSelection(siteId: string) {
+    setFormData({ ...formData, site_id: siteId })
+    // Fetch posts for this site
+    try {
+      const res = await fetch(`/api/sites/${siteId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setSelectedSitePosts(data.posts || [])
+        setSelectedPostId("")
+      }
+    } catch (e) {
+      console.error("Error fetching site posts:", e)
+      setSelectedSitePosts([])
+    }
+  }
+
   async function handleRotation() {
     setRotationLoading(true)
     try {
@@ -904,7 +929,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                   <Label className="font-semibold">Security Site Location *</Label>
                   <Select
                     value={formData.site_id || ""}
-                    onValueChange={(value) => setFormData({ ...formData, site_id: value })}
+                    onValueChange={handleSiteSelection}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select the site for assignment" />
@@ -947,11 +972,22 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Not specified</SelectItem>
-                      <SelectItem value="Gate">Gate</SelectItem>
-                      <SelectItem value="Patrol">Patrol</SelectItem>
-                      <SelectItem value="Control Room">Control Room</SelectItem>
+                      {selectedSitePosts && selectedSitePosts.length > 0 ? (
+                        selectedSitePosts.map((post: Post) => (
+                          <SelectItem key={post.id || post.name} value={post.name}>
+                            {post.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="General">General</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
+                  {selectedSitePosts && selectedSitePosts.length > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      {selectedSitePosts.length} position{selectedSitePosts.length !== 1 ? "s" : ""} available at this site
+                    </div>
+                  )}
                 </div>
                 <div className="grid gap-2">
                   <Label className="font-semibold">Assignment Date *</Label>

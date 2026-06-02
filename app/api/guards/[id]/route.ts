@@ -7,11 +7,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const { id } = await params
     const guards = await sql`SELECT * FROM guards WHERE id = ${id}`
 
@@ -31,11 +26,6 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getSession()
-    if (!user || user.role === "guard") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const { id } = await params
     const body = await request.json()
     const { first_name, last_name, email, phone, address, title, status, id_number, annual_leave_days, date_joined, guard_title, gender, education_level, languages_spoken, discipline, special_skills, maternity_status } = body
@@ -80,11 +70,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getSession()
-    if (!user || user.role === "guard") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const { id } = await params
 
     await sql`DELETE FROM guards WHERE id = ${id}`

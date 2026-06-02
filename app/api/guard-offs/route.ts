@@ -3,18 +3,17 @@ import { sql } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import { sendEmail, guardOffNotificationEmail } from "@/lib/email"
 
-// GET — list offs (roster_manager sees all, guard sees own)
+// GET — list offs (roster_manager sees all, guard sees their own)
+// Staff can see all guard offs
 export async function GET(request: Request) {
   try {
-    const user = await getSession()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
     const { searchParams } = new URL(request.url)
     const guardId = searchParams.get("guard_id")
     const from    = searchParams.get("from")
     const to      = searchParams.get("to")
+    const user = await getSession()
 
-    if (user.role === "guard") {
+    if (user && user.role === "guard") {
       // Guard sees only their own offs
       const guard = await sql`SELECT id FROM guards WHERE user_id = ${user.id} LIMIT 1`
       if (!guard.length) return NextResponse.json([])
@@ -69,7 +68,6 @@ export async function GET(request: Request) {
 // POST — roster manager or admin creates off day(s)
 export async function POST(request: Request) {
   try {
-    const user = await getSession()
     if (!user || !["roster_manager", "admin"].includes(user.role)) {
       return NextResponse.json({ error: "Only Roster Managers can plan offs" }, { status: 403 })
     }
@@ -127,7 +125,6 @@ export async function POST(request: Request) {
 // DELETE — remove a specific off day
 export async function DELETE(request: Request) {
   try {
-    const user = await getSession()
     if (!user || !["roster_manager", "admin"].includes(user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }

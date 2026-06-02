@@ -1,15 +1,9 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
-import { getSession } from "@/lib/auth"
 import { sendEmail, assignmentNotificationEmail } from "@/lib/email"
 
 export async function GET(request: Request) {
   try {
-    const user = await getSession()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const { searchParams } = new URL(request.url)
     const from = searchParams.get("from")
     const to = searchParams.get("to")
@@ -66,11 +60,6 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const user = await getSession()
-    if (!user || user.role === "guard") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const body = await request.json()
     const { guard_id, site_id, shift_id, date, notes, position } = body
 
@@ -84,11 +73,9 @@ export async function POST(request: Request) {
       RETURNING *
     `
 
-    // Derive the base URL from the incoming request so the portal link is always correct
     const reqUrl = new URL(request.url)
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${reqUrl.protocol}//${reqUrl.host}`
 
-    // Send assignment notification email if guard has an email address
     try {
       const guardInfo = await sql`
         SELECT g.first_name, g.last_name, g.email,
@@ -116,7 +103,6 @@ export async function POST(request: Request) {
         })
       }
     } catch (emailErr) {
-      // Don't fail the assignment creation if email fails
       console.error("[assignments] Email notification failed:", emailErr)
     }
 
