@@ -207,7 +207,7 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
   }
 
   // Columns that are internal DB keys — hide them from the display table
-  const HIDDEN_COLS = new Set(["id", "guard_id", "site_id", "shift_id", "assignment_id", "client_id", "created_at", "updated_at", "created_by", "resolved_by", "password_hash"])
+  const HIDDEN_COLS = new Set(["id", "#", "guard_id", "site_id", "shift_id", "assignment_id", "client_id", "created_at", "updated_at", "created_by", "resolved_by", "password_hash"])
 
   const visibleColumns = reportColumns.filter((c) => !HIDDEN_COLS.has(c))
 
