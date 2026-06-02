@@ -225,7 +225,6 @@ export async function GET(request: Request) {
           ROW_NUMBER() OVER (ORDER BY s.name) AS "#",
           s.name AS "Site Name",
           c.name AS "Client",
-          s.address AS "Address",
           s.district AS "District",
           s.sector AS "Sector",
           s.contact_person AS "Contact Person",

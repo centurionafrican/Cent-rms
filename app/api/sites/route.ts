@@ -20,15 +20,15 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, address, district, sector, contact_person, contact_phone, is_active, client_id, site_status, guards_needed, posts } = body
+    const { name, district, sector, contact_person, contact_phone, is_active, client_id, site_status, guards_needed, posts } = body
 
     if (!name) {
       return NextResponse.json({ error: "Site name is required" }, { status: 400 })
     }
 
     const result = await sql`
-      INSERT INTO sites (name, address, district, sector, contact_person, contact_phone, is_active, client_id, site_status, guards_needed)
-      VALUES (${name}, ${address || null}, ${district || null}, ${sector || null}, ${contact_person || null}, ${contact_phone || null}, ${is_active !== false}, ${client_id || null}, ${site_status || 'active'}, ${guards_needed || 1})
+      INSERT INTO sites (name, district, sector, contact_person, contact_phone, is_active, client_id, site_status, guards_needed)
+      VALUES (${name}, ${district || null}, ${sector || null}, ${contact_person || null}, ${contact_phone || null}, ${is_active !== false}, ${client_id || null}, ${site_status || 'active'}, ${guards_needed || 1})
       RETURNING *
     `
 
