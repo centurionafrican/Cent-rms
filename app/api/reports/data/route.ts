@@ -221,9 +221,17 @@ export async function GET(request: Request) {
 
     if (type === "sites") {
       const sites = await sql`
-        SELECT s.*, c.name as client_name,
-          (SELECT COUNT(DISTINCT a.guard_id) FROM assignments a WHERE a.site_id = s.id AND a.date >= CURRENT_DATE) as assigned_guards,
-          (SELECT STRING_AGG(p.name, ', ') FROM posts p WHERE p.site_id = s.id) as posts
+        SELECT 
+          ROW_NUMBER() OVER (ORDER BY s.name) AS "#",
+          s.name AS "Site Name",
+          c.name AS "Client",
+          s.address AS "Address",
+          s.contact_person AS "Contact Person",
+          s.contact_phone AS "Contact Phone",
+          s.guards_needed AS "Guards Needed",
+          (SELECT COUNT(DISTINCT a.guard_id) FROM assignments a WHERE a.site_id = s.id AND a.date >= CURRENT_DATE) AS "Assigned Guards",
+          (SELECT STRING_AGG(p.name, ', ') FROM posts p WHERE p.site_id = s.id) AS "Posts",
+          CASE WHEN s.is_active THEN 'Active' ELSE 'Inactive' END AS "Status"
         FROM sites s
         LEFT JOIN clients c ON c.id = s.client_id
         ORDER BY s.name
@@ -243,6 +251,7 @@ export async function GET(request: Request) {
           c.address AS "Address",
           CAST(COUNT(s.id) AS INTEGER) AS "Total Sites",
           COALESCE(SUM(s.guards_needed), 0) AS "Guards Needed",
+          STRING_AGG(s.name, ', ' ORDER BY s.name) AS "Sites",
           c.status AS "Status"
         FROM clients c
         LEFT JOIN sites s ON s.client_id = c.id
