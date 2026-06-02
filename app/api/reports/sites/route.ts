@@ -7,7 +7,7 @@ export async function GET() {
     const sites = await sql`
       SELECT 
         ROW_NUMBER() OVER (ORDER BY s.name) AS row_num,
-        s.name, s.address, s.contact_person, s.contact_phone, s.is_active, s.created_at,
+        s.name, s.address, s.district, s.sector, s.contact_person, s.contact_phone, s.is_active, s.created_at,
         COUNT(DISTINCT a.guard_id) as assigned_guards,
         (SELECT STRING_AGG(p.name, ', ') FROM posts p WHERE p.site_id = s.id) as posts
       FROM sites s
@@ -16,11 +16,13 @@ export async function GET() {
       ORDER BY s.name
     `
 
-    const headers = ["#", "Name", "Address", "Contact Person", "Contact Phone", "Active", "Assigned Guards", "Posts", "Created At"]
+    const headers = ["#", "Name", "Address", "District", "Sector", "Contact Person", "Contact Phone", "Active", "Assigned Guards", "Posts", "Created At"]
     const rows = sites.map(s => [
       s.row_num,
       s.name,
       s.address,
+      s.district,
+      s.sector,
       s.contact_person,
       s.contact_phone,
       s.is_active ? "Yes" : "No",

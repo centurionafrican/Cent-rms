@@ -226,6 +226,8 @@ export async function GET(request: Request) {
           s.name AS "Site Name",
           c.name AS "Client",
           s.address AS "Address",
+          s.district AS "District",
+          s.sector AS "Sector",
           s.contact_person AS "Contact Person",
           s.contact_phone AS "Contact Phone",
           s.guards_needed AS "Guards Needed",

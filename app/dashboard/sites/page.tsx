@@ -25,6 +25,8 @@ type Site = {
   id: number
   name: string
   address: string | null
+  district: string | null
+  sector: string | null
   contact_person: string | null
   contact_phone: string | null
   is_active: boolean
@@ -71,7 +73,7 @@ export default function SitesPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [newPost, setNewPost] = useState("")
   const [formData, setFormData] = useState({
-    name: "", address: "", contact_person: "", contact_phone: "",
+    name: "", address: "", district: "", sector: "", contact_person: "", contact_phone: "",
     client_id: "", site_status: "active", guards_needed: "1",
   })
   const [saving, setSaving] = useState(false)
@@ -162,7 +164,7 @@ export default function SitesPage() {
   }
 
   function resetForm() {
-    setFormData({ name: "", address: "", contact_person: "", contact_phone: "", client_id: "", site_status: "active", guards_needed: "1" })
+    setFormData({ name: "", address: "", district: "", sector: "", contact_person: "", contact_phone: "", client_id: "", site_status: "active", guards_needed: "1" })
     setPosts([])
     setNewPost("")
   }
@@ -170,7 +172,8 @@ export default function SitesPage() {
   async function openEdit(site: Site) {
     setSelectedSite(site)
     setFormData({
-      name: site.name, address: site.address || "", contact_person: site.contact_person || "",
+      name: site.name, address: site.address || "", district: site.district || "", sector: site.sector || "",
+      contact_person: site.contact_person || "",
       contact_phone: site.contact_phone || "", client_id: site.client_id ? String(site.client_id) : "",
       site_status: site.site_status || "active", guards_needed: String(site.guards_needed || 1),
     })
@@ -260,6 +263,16 @@ export default function SitesPage() {
       <div className="space-y-2">
         <Label>Address</Label>
         <Textarea value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>District</Label>
+          <Input value={formData.district} onChange={(e) => setFormData({ ...formData, district: e.target.value })} placeholder="e.g., Gasabo" />
+        </div>
+        <div className="space-y-2">
+          <Label>Sector</Label>
+          <Input value={formData.sector} onChange={(e) => setFormData({ ...formData, sector: e.target.value })} placeholder="e.g., Kimironko" />
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -373,6 +386,8 @@ export default function SitesPage() {
                   <TableHead>Site Name</TableHead>
                   <TableHead>Client</TableHead>
                   <TableHead>Address</TableHead>
+                  <TableHead>District</TableHead>
+                  <TableHead>Sector</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Guards Needed</TableHead>
@@ -381,7 +396,7 @@ export default function SitesPage() {
               </TableHeader>
               <TableBody>
                 {displayedSites.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="h-24 text-center">No sites found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="h-24 text-center">No sites found.</TableCell></TableRow>
                 ) : displayedSites.map((site) => {
                   const statusOpt = SITE_STATUS_OPTIONS.find((s) => s.value === site.site_status)
                   return (
@@ -389,6 +404,8 @@ export default function SitesPage() {
                       <TableCell className="font-medium">{site.name}</TableCell>
                       <TableCell>{site.client_name || <span className="text-muted-foreground">-</span>}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{site.address || "-"}</TableCell>
+                      <TableCell>{site.district || "-"}</TableCell>
+                      <TableCell>{site.sector || "-"}</TableCell>
                       <TableCell>
                         <div className="text-sm">
                           {site.contact_person && <div>{site.contact_person}</div>}
