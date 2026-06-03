@@ -16,7 +16,8 @@ import { Plus, Search, Edit, Trash2, Building2, MapPin, Download, Users, Mail, P
 interface Site {
   id: number
   name: string
-  address: string | null
+  district: string | null
+  sector: string | null
   guards_needed: number
   site_status: string
   contact_person: string | null
@@ -29,8 +30,8 @@ interface Client {
   contact_person: string | null
   contact_email: string | null
   contact_phone: string | null
-  address: string | null
-  city: string | null
+  district: string | null
+  sector: string | null
   is_active: boolean
   notes: string | null
   created_at: string
@@ -51,7 +52,7 @@ export default function ClientsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [bulkDeleting, setBulkDeleting] = useState(false)
   const [formData, setFormData] = useState({
-    name: "", contact_person: "", contact_email: "", contact_phone: "", address: "", city: "", notes: "",
+    name: "", contact_person: "", contact_email: "", contact_phone: "", district: "", sector: "", notes: "",
   })
 
   useEffect(() => { fetchClients() }, [])
@@ -91,7 +92,7 @@ export default function ClientsPage() {
   }
 
   function resetForm() {
-    setFormData({ name: "", contact_person: "", contact_email: "", contact_phone: "", address: "", city: "", notes: "" })
+    setFormData({ name: "", contact_person: "", contact_email: "", contact_phone: "", district: "", sector: "", notes: "" })
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -144,7 +145,7 @@ export default function ClientsPage() {
   const filtered = clients.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.contact_person?.toLowerCase().includes(search.toLowerCase()) ||
-    c.city?.toLowerCase().includes(search.toLowerCase())
+    c.sector?.toLowerCase().includes(search.toLowerCase())
   )
 
   const totalSites = clients.reduce((sum, c) => sum + (Number(c.site_count) || 0), 0)
@@ -230,7 +231,7 @@ export default function ClientsPage() {
                 <TableHead>Company Name</TableHead>
                 <TableHead>Contact Person</TableHead>
                 <TableHead>Phone</TableHead>
-                <TableHead>City</TableHead>
+                <TableHead>Sector</TableHead>
                 <TableHead>Sites</TableHead>
                 <TableHead>Guards Needed</TableHead>
                 <TableHead>Status</TableHead>
@@ -260,7 +261,7 @@ export default function ClientsPage() {
                   </TableCell>
                   <TableCell>{client.contact_person || "-"}</TableCell>
                   <TableCell>{client.contact_phone || "-"}</TableCell>
-                  <TableCell>{client.city || "-"}</TableCell>
+                  <TableCell>{client.sector || "-"}</TableCell>
                   <TableCell><Badge variant="outline">{Number(client.site_count) || 0} sites</Badge></TableCell>
                   <TableCell><Badge variant="secondary">{Number(client.total_guards_needed) || 0} guards</Badge></TableCell>
                   <TableCell>
@@ -273,7 +274,7 @@ export default function ClientsPage() {
                       <Button variant="outline" size="sm" onClick={(e) => {
                         e.stopPropagation()
                         setEditingClient(client)
-                        setFormData({ name: client.name, contact_person: client.contact_person || "", contact_email: client.contact_email || "", contact_phone: client.contact_phone || "", address: client.address || "", city: client.city || "", notes: client.notes || "" })
+                        setFormData({ name: client.name, contact_person: client.contact_person || "", contact_email: client.contact_email || "", contact_phone: client.contact_phone || "", district: client.district || "", sector: client.sector || "", notes: client.notes || "" })
                       }}><Edit className="h-3 w-3" /></Button>
                       <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleDelete(client.id) }} className="text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" /></Button>
                     </div>
@@ -315,10 +316,10 @@ export default function ClientsPage() {
                   <span>{viewingClient.contact_phone}</span>
                 </div>
               )}
-              {viewingClient?.city && (
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{viewingClient.city}{viewingClient.address ? ` — ${viewingClient.address}` : ""}</span>
+              {viewingClient?.sector && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                  <span>{viewingClient.sector}{viewingClient.district ? ` — ${viewingClient.district}` : ""}</span>
                 </div>
               )}
             </div>
@@ -355,7 +356,7 @@ export default function ClientsPage() {
                         <span className="text-xs text-muted-foreground font-mono mt-0.5">{idx + 1}</span>
                         <div>
                           <p className="font-medium text-sm">{site.name}</p>
-                          {site.address && <p className="text-xs text-muted-foreground">{site.address}</p>}
+                          {site.district && <p className="text-xs text-muted-foreground">{site.district}{site.sector ? `, ${site.sector}` : ""}</p>}
                           {site.contact_person && <p className="text-xs text-muted-foreground">{site.contact_person} {site.contact_phone ? `· ${site.contact_phone}` : ""}</p>}
                         </div>
                       </div>
@@ -389,7 +390,7 @@ export default function ClientsPage() {
               setViewingClient(null)
               setClientSites([])
               setEditingClient(viewingClient)
-              setFormData({ name: viewingClient.name, contact_person: viewingClient.contact_person || "", contact_email: viewingClient.contact_email || "", contact_phone: viewingClient.contact_phone || "", address: viewingClient.address || "", city: viewingClient.city || "", notes: viewingClient.notes || "" })
+              setFormData({ name: viewingClient.name, contact_person: viewingClient.contact_person || "", contact_email: viewingClient.contact_email || "", contact_phone: viewingClient.contact_phone || "", district: viewingClient.district || "", sector: viewingClient.sector || "", notes: viewingClient.notes || "" })
             }}>
               <Edit className="h-4 w-4 mr-2" />Edit Client
             </Button>
@@ -420,12 +421,12 @@ export default function ClientsPage() {
                 <Input value={formData.contact_phone} onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>City</Label>
-                <Input value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} />
+                <Label>District</Label>
+                <Input value={formData.district} onChange={(e) => setFormData({ ...formData, district: e.target.value })} />
               </div>
-              <div className="col-span-2 space-y-2">
-                <Label>Address</Label>
-                <Input value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
+              <div className="space-y-2">
+                <Label>Sector</Label>
+                <Input value={formData.sector} onChange={(e) => setFormData({ ...formData, sector: e.target.value })} />
               </div>
               <div className="col-span-2 space-y-2">
                 <Label>Notes</Label>
@@ -460,12 +461,12 @@ export default function ClientsPage() {
                 <Input value={formData.contact_phone} onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>City</Label>
-                <Input value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} />
+                <Label>District</Label>
+                <Input value={formData.district} onChange={(e) => setFormData({ ...formData, district: e.target.value })} />
               </div>
-              <div className="col-span-2 space-y-2">
-                <Label>Address</Label>
-                <Input value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
+              <div className="space-y-2">
+                <Label>Sector</Label>
+                <Input value={formData.sector} onChange={(e) => setFormData({ ...formData, sector: e.target.value })} />
               </div>
               <div className="col-span-2 space-y-2">
                 <Label>Notes</Label>

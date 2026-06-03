@@ -249,15 +249,15 @@ export async function GET(request: Request) {
           c.contact_person AS "Contact Person",
           c.contact_email AS "Email",
           c.contact_phone AS "Phone",
-          c.address AS "Address",
-          c.city AS "City",
+          c.district AS "District",
+          c.sector AS "Sector",
           CAST(COUNT(s.id) AS INTEGER) AS "Total Sites",
           COALESCE(SUM(s.guards_needed), 0) AS "Guards Needed",
           STRING_AGG(s.name, ', ' ORDER BY s.name) AS "Sites",
           CASE WHEN c.is_active THEN 'Active' ELSE 'Inactive' END AS "Status"
         FROM clients c
         LEFT JOIN sites s ON s.client_id = c.id
-        GROUP BY c.id, c.name, c.contact_person, c.contact_email, c.contact_phone, c.address, c.city, c.is_active
+        GROUP BY c.id, c.name, c.contact_person, c.contact_email, c.contact_phone, c.district, c.sector, c.is_active
         ORDER BY c.name
       `
       const columns = clients.length > 0 ? Object.keys(clients[0]) : []
