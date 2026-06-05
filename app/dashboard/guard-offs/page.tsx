@@ -418,7 +418,6 @@ export default function GuardOffsPage() {
                 )}
               </div>
             )}
-            </div>
             <div className="space-y-1.5">
               <Label>Notes <span className="text-muted-foreground text-xs">(optional)</span></Label>
               <Textarea placeholder="Any additional notes..." value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} />
