@@ -3,25 +3,53 @@ import { sql } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import { notifyApprovalRequest } from "@/lib/notifications"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const leaves = await sql`
-      SELECT 
-        lr.*,
-        g.first_name || ' ' || g.last_name as guard_name,
-        g.phone as guard_phone,
-        u.first_name || ' ' || u.last_name as reviewed_by_name,
-        om.first_name || ' ' || om.last_name as ops_manager_name,
-        hr.first_name || ' ' || hr.last_name as hr_name,
-        cc.first_name || ' ' || cc.last_name as coceo_name
-      FROM leave_requests lr
-      JOIN guards g ON g.id = lr.guard_id
-      LEFT JOIN users u ON u.id = lr.reviewed_by
-      LEFT JOIN users om ON om.id = lr.ops_manager_approved_by
-      LEFT JOIN users hr ON hr.id = lr.hr_approved_by
-      LEFT JOIN users cc ON cc.id = lr.coceo_approved_by
-      ORDER BY lr.created_at DESC
-    `
+    const { searchParams } = new URL(request.url)
+    const from = searchParams.get("from")
+    const to = searchParams.get("to")
+    
+    let leaves
+    if (from && to) {
+      leaves = await sql`
+        SELECT 
+          lr.*,
+          g.first_name || ' ' || g.last_name as guard_name,
+          g.guard_code as guard_code,
+          g.phone as guard_phone,
+          u.first_name || ' ' || u.last_name as reviewed_by_name,
+          om.first_name || ' ' || om.last_name as ops_manager_name,
+          hr.first_name || ' ' || hr.last_name as hr_name,
+          cc.first_name || ' ' || cc.last_name as coceo_name
+        FROM leave_requests lr
+        JOIN guards g ON g.id = lr.guard_id
+        LEFT JOIN users u ON u.id = lr.reviewed_by
+        LEFT JOIN users om ON om.id = lr.ops_manager_approved_by
+        LEFT JOIN users hr ON hr.id = lr.hr_approved_by
+        LEFT JOIN users cc ON cc.id = lr.coceo_approved_by
+        WHERE lr.start_date >= ${from}::date AND lr.end_date <= ${to}::date
+        ORDER BY lr.created_at DESC
+      `
+    } else {
+      leaves = await sql`
+        SELECT 
+          lr.*,
+          g.first_name || ' ' || g.last_name as guard_name,
+          g.guard_code as guard_code,
+          g.phone as guard_phone,
+          u.first_name || ' ' || u.last_name as reviewed_by_name,
+          om.first_name || ' ' || om.last_name as ops_manager_name,
+          hr.first_name || ' ' || hr.last_name as hr_name,
+          cc.first_name || ' ' || cc.last_name as coceo_name
+        FROM leave_requests lr
+        JOIN guards g ON g.id = lr.guard_id
+        LEFT JOIN users u ON u.id = lr.reviewed_by
+        LEFT JOIN users om ON om.id = lr.ops_manager_approved_by
+        LEFT JOIN users hr ON hr.id = lr.hr_approved_by
+        LEFT JOIN users cc ON cc.id = lr.coceo_approved_by
+        ORDER BY lr.created_at DESC
+      `
+    }
     return NextResponse.json({ leaves })
   } catch (error) {
     console.error("Error fetching leaves:", error)

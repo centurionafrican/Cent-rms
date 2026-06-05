@@ -676,7 +676,7 @@ export default function LeavePlanPage() {
               onClick={handleSubmit}
               disabled={!selectedGuard || dateRanges.every((r) => !r.start_date || !r.end_date) || submitting}
             >
-              {submitting ? "Creating..." : `Create ${dateRanges.filter((r) => r.start_date && r.end_date).length} Leave Request(s)`}
+              {submitting ? "Submitting..." : "Submit Leave Plan"}
             </Button>
           </DialogFooter>
         </DialogContent>
