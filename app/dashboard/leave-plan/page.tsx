@@ -50,6 +50,7 @@ interface Guard {
   first_name: string
   last_name: string
   guard_code: string
+  status: string
   annual_leave_days: number
   leave_days_used: number
 }
@@ -77,10 +78,12 @@ export default function LeavePlanPage() {
   const monthEnd = new Date(year, month + 1, 0).toISOString().split("T")[0]
 
   const { data: leavesData, mutate } = useSWR(`/api/leaves?from=${monthStart}&to=${monthEnd}`, fetcher)
-  const { data: guardsData } = useSWR("/api/guards?status=active", fetcher)
+  const { data: guardsData } = useSWR("/api/guards", fetcher)
 
   const leaves: LeaveRequest[] = leavesData?.leaves || []
-  const guards: Guard[] = guardsData?.guards || []
+  // Guards API returns array directly, filter to active only
+  const allGuards: Guard[] = Array.isArray(guardsData) ? guardsData : guardsData?.guards || []
+  const guards = allGuards.filter((g) => g.status === "active")
 
   // Generate calendar days
   const firstDay = new Date(year, month, 1)
