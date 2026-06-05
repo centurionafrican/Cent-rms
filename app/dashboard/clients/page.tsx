@@ -231,7 +231,7 @@ export default function ClientsPage() {
                 <TableHead>Company Name</TableHead>
                 <TableHead>Contact Person</TableHead>
                 <TableHead>Phone</TableHead>
-                <TableHead>Sector</TableHead>
+                <TableHead>District</TableHead>
                 <TableHead>Sites</TableHead>
                 <TableHead>Guards Needed</TableHead>
                 <TableHead>Status</TableHead>
@@ -261,7 +261,7 @@ export default function ClientsPage() {
                   </TableCell>
                   <TableCell>{client.contact_person || "-"}</TableCell>
                   <TableCell>{client.contact_phone || "-"}</TableCell>
-                  <TableCell>{client.sector || "-"}</TableCell>
+                  <TableCell>{client.district || "-"}</TableCell>
                   <TableCell><Badge variant="outline">{Number(client.site_count) || 0} sites</Badge></TableCell>
                   <TableCell><Badge variant="secondary">{Number(client.total_guards_needed) || 0} guards</Badge></TableCell>
                   <TableCell>
