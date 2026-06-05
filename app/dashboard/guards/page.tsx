@@ -411,7 +411,6 @@ export default function GuardsPage() {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>Date Joined</Label><Input type="date" value={formData.date_joined} onChange={(e) => setFormData({ ...formData, date_joined: e.target.value })} /></div>
-        <div className="space-y-2"><Label>Daily Rate (RWF)</Label><Input type="number" min="0" step="100" value={formData.daily_rate} onChange={(e) => setFormData({ ...formData, daily_rate: e.target.value })} placeholder="0" /></div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>Email</Label><Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} /></div>
