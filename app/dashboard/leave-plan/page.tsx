@@ -101,7 +101,7 @@ export default function LeavePlanPage() {
   const { data: guardsData } = useSWR("/api/guards", fetcher)
 
   const allLeaves: LeaveRequest[] = leavesData?.leaves || []
-  const leaves: LeaveRequest[] = allLeaves.filter((l: LeaveRequest) => l.leave_type === "Annual Leave")
+  const leaves: LeaveRequest[] = allLeaves.filter((l: LeaveRequest) => l.leave_type === "annual")
   const allGuards: Guard[] = Array.isArray(guardsData) ? guardsData : guardsData?.guards || []
   const guards = allGuards.filter((g) => g.status === "active")
 
