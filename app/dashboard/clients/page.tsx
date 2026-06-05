@@ -413,6 +413,10 @@ export default function ClientsPage() {
           <form onSubmit={handleCreate} className="flex flex-col flex-1 overflow-hidden">
             <div className="grid grid-cols-2 gap-4 overflow-y-auto flex-1 pr-1 py-2">
               <div className="col-span-2 space-y-2">
+                <Label>Company Name *</Label>
+                <Input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Enter company name" />
+              </div>
+              <div className="col-span-2 space-y-2">
                 <Label className="text-base font-semibold">Primary Contact Details</Label>
                 <p className="text-xs text-muted-foreground">Add additional contacts in the "Client Contacts" section in the detail view</p>
               </div>
