@@ -56,6 +56,10 @@ interface LeaveRequest {
   guard_name: string
   guard_phone: string
   reviewed_by_name: string | null
+  roster_manager_approved: boolean | null
+  roster_manager_id: number | null
+  roster_manager_approved_at: string | null
+  roster_manager_name: string | null
   ops_manager_approved: boolean | null
   ops_manager_approved_by: number | null
   ops_manager_approved_at: string | null
@@ -246,9 +250,11 @@ export function LeavesList({ initialLeaves, guards, currentUserId, currentUserRo
   // Determine what step the user can approve based on their role
   function canApproveStep(leave: LeaveRequest, step: string): boolean {
     if (leave.status === "rejected" || leave.status === "approved") return false
-    // operations_manager role = first approval
-    if (step === "ops_manager" && currentUserRole === "operations_manager" && leave.ops_manager_approved === null) return true
-    // hr role = second approval
+    // roster_manager role = first approval
+    if (step === "roster_manager" && currentUserRole === "roster_manager" && leave.roster_manager_approved === null) return true
+    // operations_manager role = second approval (requires roster manager approval first)
+    if (step === "ops_manager" && currentUserRole === "operations_manager" && leave.roster_manager_approved === true && leave.ops_manager_approved === null) return true
+    // hr role = third approval
     if (step === "hr" && currentUserRole === "hr" && leave.ops_manager_approved === true && leave.hr_approved === null) return true
     // coceo role = final approval
     if (step === "coceo" && currentUserRole === "coceo" && leave.hr_approved === true && leave.coceo_approved === null) return true
@@ -280,7 +286,8 @@ export function LeavesList({ initialLeaves, guards, currentUserId, currentUserRo
     if (leave.coceo_approved === true) return { label: "Approved", color: "bg-green-100 text-green-700 border-green-200" }
     if (leave.hr_approved === true) return { label: "Awaiting Co-CEO", color: "bg-purple-100 text-purple-700 border-purple-200" }
     if (leave.ops_manager_approved === true) return { label: "Awaiting HR", color: "bg-blue-100 text-blue-700 border-blue-200" }
-    return { label: "Awaiting Ops Mgr", color: "bg-amber-100 text-amber-700 border-amber-200" }
+    if (leave.roster_manager_approved === true) return { label: "Awaiting Ops Mgr", color: "bg-cyan-100 text-cyan-700 border-cyan-200" }
+    return { label: "Awaiting Roster Mgr", color: "bg-amber-100 text-amber-700 border-amber-200" }
   }
 
   return (
@@ -404,6 +411,7 @@ export function LeavesList({ initialLeaves, guards, currentUserId, currentUserRo
                 <TableHead>Type</TableHead>
                 <TableHead>Duration</TableHead>
                 <TableHead>Working Days</TableHead>
+                <TableHead>Roster Mgr</TableHead>
                 <TableHead>Ops Manager</TableHead>
                 <TableHead>HR</TableHead>
                 <TableHead>Co-CEO</TableHead>
@@ -413,7 +421,7 @@ export function LeavesList({ initialLeaves, guards, currentUserId, currentUserRo
             <TableBody>
               {filteredLeaves.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                     No leave requests found.
                   </TableCell>
                 </TableRow>
@@ -444,6 +452,17 @@ export function LeavesList({ initialLeaves, guards, currentUserId, currentUserRo
                         </div>
                       </TableCell>
                       <TableCell>{getDays(leave.start_date, leave.end_date)}</TableCell>
+                      <TableCell>
+                        <ApprovalStep
+                          label="Roster Mgr"
+                          approved={leave.roster_manager_approved}
+                          approverName={leave.roster_manager_name}
+                          approvedAt={leave.roster_manager_approved_at}
+                          isNext={canApproveStep(leave, "roster_manager")}
+                          onApprove={() => handleApproval(leave.id, "roster_manager", true)}
+                          onReject={() => handleApproval(leave.id, "roster_manager", false)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <ApprovalStep
                           label="Ops Manager"

@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth"
 import { sql } from "@/lib/db"
-import { TimeOffUnified } from "./time-off-unified"
+import { LeavesList } from "./leaves-list"
 
 async function getLeaveRequests() {
   return await sql`
@@ -24,54 +24,31 @@ async function getLeaveRequests() {
   `
 }
 
-async function getGuardOffs() {
-  return await sql`
-    SELECT 
-      go.id,
-      go.guard_id,
-      g.first_name || ' ' || g.last_name as guard_name,
-      go.date,
-      go.reason,
-      go.notes,
-      go.created_at
-    FROM guard_offs go
-    JOIN guards g ON g.id = go.guard_id
-    ORDER BY go.date DESC
-  `
-}
-
 async function getGuards() {
   return await sql`SELECT id, first_name, last_name FROM guards WHERE status = 'active' ORDER BY first_name`
 }
 
 export default async function LeavesPage() {
   const session = await getSession()
-  const [leaveRequests, guardOffs, guards] = await Promise.all([
+  const [leaveRequests, guards] = await Promise.all([
     getLeaveRequests(),
-    getGuardOffs(),
     getGuards(),
   ])
-
-  const isRosterManager = session?.role === "roster_manager" || session?.role === "admin"
-  const isOpsManager = session?.role === "ops_manager" || session?.role === "admin"
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Guard Availability & Time Off</h1>
+        <h1 className="text-2xl font-bold text-foreground">Leave Requests</h1>
         <p className="text-muted-foreground">
-          Manage guard off days and leave requests with multi-level approval workflow (Roster Manager → Operations Manager)
+          Manage employee leave requests with multi-level approval (Roster Manager → Ops Manager → HR → Co-CEO).
         </p>
       </div>
 
-      <TimeOffUnified 
-        initialLeaves={leaveRequests}
-        initialOffs={guardOffs}
+      <LeavesList 
+        initialLeaves={leaveRequests} 
         guards={guards}
         currentUserId={session?.id}
-        currentUserRole={session?.role || "user"}
-        isRosterManager={isRosterManager}
-        isOpsManager={isOpsManager}
+        currentUserRole={session?.role || "admin"}
       />
     </div>
   )

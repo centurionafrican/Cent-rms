@@ -10,11 +10,13 @@ export async function PATCH(
     const { id } = await params
     const body = await request.json()
     const { approval_step, approved } = body
+    const session = await getSession()
+    const userId = session?.id || 1
 
-    // approval_step: "ops_manager" | "hr" | "coceo"
+    // approval_step: "roster_manager" | "ops_manager" | "hr" | "coceo"
     // approved: boolean
 
-    if (!approval_step || !["ops_manager", "hr", "coceo"].includes(approval_step)) {
+    if (!approval_step || !["roster_manager", "ops_manager", "hr", "coceo"].includes(approval_step)) {
       return NextResponse.json({ error: "Invalid approval step" }, { status: 400 })
     }
 
@@ -27,6 +29,9 @@ export async function PATCH(
     const leave = existing[0]
 
     // Validate the approval order
+    if (approval_step === "ops_manager" && !leave.roster_manager_approved) {
+      return NextResponse.json({ error: "Roster Manager must approve first" }, { status: 400 })
+    }
     if (approval_step === "hr" && !leave.ops_manager_approved) {
       return NextResponse.json({ error: "Operations Manager must approve first" }, { status: 400 })
     }
@@ -36,25 +41,60 @@ export async function PATCH(
 
     // If rejecting at any step, mark the whole leave as rejected
     if (!approved) {
-      await sql`
-        UPDATE leave_requests SET
-          status = 'rejected',
-          reviewed_by = ${user.id},
-          reviewed_at = NOW(),
-          ${approval_step === "ops_manager" ? sql`ops_manager_approved = false, ops_manager_approved_by = ${user.id}, ops_manager_approved_at = NOW()` : 
-            approval_step === "hr" ? sql`hr_approved = false, hr_approved_by = ${user.id}, hr_approved_at = NOW()` :
-            sql`coceo_approved = false, coceo_approved_by = ${user.id}, coceo_approved_at = NOW()`}
-        WHERE id = ${id}
-      `
+      if (approval_step === "roster_manager") {
+        await sql`
+          UPDATE leave_requests SET
+            status = 'rejected',
+            roster_manager_approved = false,
+            roster_manager_id = ${userId},
+            roster_manager_approved_at = NOW()
+          WHERE id = ${id}
+        `
+      } else if (approval_step === "ops_manager") {
+        await sql`
+          UPDATE leave_requests SET
+            status = 'rejected',
+            ops_manager_approved = false,
+            ops_manager_approved_by = ${userId},
+            ops_manager_approved_at = NOW()
+          WHERE id = ${id}
+        `
+      } else if (approval_step === "hr") {
+        await sql`
+          UPDATE leave_requests SET
+            status = 'rejected',
+            hr_approved = false,
+            hr_approved_by = ${userId},
+            hr_approved_at = NOW()
+          WHERE id = ${id}
+        `
+      } else if (approval_step === "coceo") {
+        await sql`
+          UPDATE leave_requests SET
+            status = 'rejected',
+            coceo_approved = false,
+            coceo_approved_by = ${userId},
+            coceo_approved_at = NOW()
+          WHERE id = ${id}
+        `
+      }
       return NextResponse.json({ success: true, status: "rejected" })
     }
 
     // Handle each approval step
-    if (approval_step === "ops_manager") {
+    if (approval_step === "roster_manager") {
+      await sql`
+        UPDATE leave_requests SET
+          roster_manager_approved = true,
+          roster_manager_id = ${userId},
+          roster_manager_approved_at = NOW()
+        WHERE id = ${id}
+      `
+    } else if (approval_step === "ops_manager") {
       await sql`
         UPDATE leave_requests SET
           ops_manager_approved = true,
-          ops_manager_approved_by = ${user.id},
+          ops_manager_approved_by = ${userId},
           ops_manager_approved_at = NOW()
         WHERE id = ${id}
       `
@@ -62,7 +102,7 @@ export async function PATCH(
       await sql`
         UPDATE leave_requests SET
           hr_approved = true,
-          hr_approved_by = ${user.id},
+          hr_approved_by = ${userId},
           hr_approved_at = NOW()
         WHERE id = ${id}
       `
@@ -71,17 +111,12 @@ export async function PATCH(
       await sql`
         UPDATE leave_requests SET
           coceo_approved = true,
-          coceo_approved_by = ${user.id},
+          coceo_approved_by = ${userId},
           coceo_approved_at = NOW(),
           status = 'approved',
-          reviewed_by = ${user.id},
+          reviewed_by = ${userId},
           reviewed_at = NOW()
         WHERE id = ${id}
-      `
-      // Update guard status to on_leave
-      await sql`
-        UPDATE guards SET status = 'on_leave' 
-        WHERE id = ${leave.guard_id}
       `
     }
 

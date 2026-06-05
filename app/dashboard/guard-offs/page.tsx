@@ -21,6 +21,8 @@ interface GuardOff {
   guard_id: number
   guard_name: string
   date: string
+  start_date: string | null
+  end_date: string | null
   reason: string
   notes: string | null
   created_at: string
@@ -65,6 +67,9 @@ export default function GuardOffsPage() {
   const [formGuardId, setFormGuardId] = useState("")
   const [formDates, setFormDates]     = useState<string[]>([])
   const [formDate, setFormDate]       = useState("")
+  const [formStartDate, setFormStartDate] = useState("")
+  const [formEndDate, setFormEndDate]     = useState("")
+  const [formMode, setFormMode]       = useState<"single" | "range">("single")
   const [formReason, setFormReason]   = useState("Day Off")
   const [formNotes, setFormNotes]     = useState("")
   const [submitting, setSubmitting]   = useState(false)
@@ -113,19 +118,40 @@ export default function GuardOffsPage() {
   }
 
   async function submit() {
-    if (!formGuardId || formDates.length === 0 || !formReason) return
+    if (!formGuardId || !formReason) return
+    
+    // Validate based on mode
+    if (formMode === "single" && formDates.length === 0) return
+    if (formMode === "range" && (!formStartDate || !formEndDate)) return
+    
     setSubmitting(true)
     try {
+      const payload: Record<string, unknown> = {
+        guard_id: Number(formGuardId),
+        reason: formReason,
+        notes: formNotes.trim() || undefined,
+      }
+      
+      if (formMode === "single") {
+        payload.dates = formDates
+      } else {
+        payload.start_date = formStartDate
+        payload.end_date = formEndDate
+      }
+      
       const res = await fetch("/api/guard-offs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ guard_id: Number(formGuardId), dates: formDates, reason: formReason, notes: formNotes.trim() || undefined }),
+        body: JSON.stringify(payload),
       })
       if (res.ok) {
         setIsOpen(false)
         setFormGuardId("")
         setFormDates([])
         setFormDate("")
+        setFormStartDate("")
+        setFormEndDate("")
+        setFormMode("single")
         setFormReason("Day Off")
         setFormNotes("")
         mutate(`/api/guard-offs?limit=500${guardParam}`)
@@ -265,7 +291,15 @@ export default function GuardOffsPage() {
                           <TableCell className="text-muted-foreground text-xs font-mono">{idx + 1}</TableCell>
                           <TableCell className="font-medium">{off.guard_name}</TableCell>
                           <TableCell className="text-sm whitespace-nowrap">
-                            {d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            {off.start_date && off.end_date && off.start_date !== off.end_date ? (
+                              <div>
+                                <span className="font-medium">{new Date(off.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                                <span className="text-muted-foreground mx-1">to</span>
+                                <span className="font-medium">{new Date(off.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                              </div>
+                            ) : (
+                              d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                            )}
                           </TableCell>
                           <TableCell>
                             <span className={`text-xs font-medium ${isWeekend ? "text-primary" : "text-muted-foreground"}`}>
@@ -324,21 +358,66 @@ export default function GuardOffsPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Add Date(s)</Label>
+              <Label>Date Selection Mode</Label>
               <div className="flex gap-2">
-                <Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className="flex-1" />
-                <Button type="button" variant="outline" onClick={addDate} disabled={!formDate}>Add</Button>
+                <Button
+                  type="button"
+                  variant={formMode === "single" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFormMode("single")}
+                  className="flex-1"
+                >
+                  Single/Multiple Days
+                </Button>
+                <Button
+                  type="button"
+                  variant={formMode === "range" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFormMode("range")}
+                  className="flex-1"
+                >
+                  Date Range
+                </Button>
               </div>
-              {formDates.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {formDates.map((d) => (
-                    <span key={d} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
-                      {new Date(d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-                      <button type="button" onClick={() => setFormDates((prev) => prev.filter((x) => x !== d))} className="hover:text-destructive">&times;</button>
-                    </span>
-                  ))}
+            </div>
+            {formMode === "single" ? (
+              <div className="space-y-1.5">
+                <Label>Add Date(s)</Label>
+                <div className="flex gap-2">
+                  <Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className="flex-1" />
+                  <Button type="button" variant="outline" onClick={addDate} disabled={!formDate}>Add</Button>
                 </div>
-              )}
+                {formDates.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {formDates.map((d) => (
+                      <span key={d} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
+                        {new Date(d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                        <button type="button" onClick={() => setFormDates((prev) => prev.filter((x) => x !== d))} className="hover:text-destructive">&times;</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Date Range</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Start Date</Label>
+                    <Input type="date" value={formStartDate} onChange={(e) => setFormStartDate(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">End Date</Label>
+                    <Input type="date" value={formEndDate} onChange={(e) => setFormEndDate(e.target.value)} min={formStartDate} />
+                  </div>
+                </div>
+                {formStartDate && formEndDate && formEndDate >= formStartDate && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {Math.ceil((new Date(formEndDate).getTime() - new Date(formStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} day(s) selected
+                  </p>
+                )}
+              </div>
+            )}
             </div>
             <div className="space-y-1.5">
               <Label>Notes <span className="text-muted-foreground text-xs">(optional)</span></Label>
@@ -347,8 +426,14 @@ export default function GuardOffsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-            <Button onClick={submit} disabled={!formGuardId || formDates.length === 0 || submitting}>
-              {submitting ? "Saving..." : `Plan ${formDates.length || ""} Off Day${formDates.length !== 1 ? "s" : ""}`}
+            <Button 
+              onClick={submit} 
+              disabled={!formGuardId || (formMode === "single" ? formDates.length === 0 : (!formStartDate || !formEndDate)) || submitting}
+            >
+              {submitting ? "Saving..." : formMode === "single" 
+                ? `Plan ${formDates.length || ""} Off Day${formDates.length !== 1 ? "s" : ""}`
+                : "Plan Off Days"
+              }
             </Button>
           </DialogFooter>
         </DialogContent>
