@@ -53,12 +53,11 @@ export function GuardAnalytics({ dateFrom, dateTo }: ReportAnalyticsProps) {
   const summaryData = [
     { name: "Present", value: data.summary.present, color: "#10b981" },
     { name: "Absent", value: data.summary.absent, color: "#ef4444" },
-    { name: "Late", value: data.summary.late, color: "#f59e0b" },
   ]
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Present</CardTitle>
@@ -75,15 +74,6 @@ export function GuardAnalytics({ dateFrom, dateTo }: ReportAnalyticsProps) {
           <CardContent>
             <div className="text-3xl font-bold text-red-600">{data.summary.absent}</div>
             <p className="text-xs text-muted-foreground mt-1">Missed shifts</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Late</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-amber-600">{data.summary.late}</div>
-            <p className="text-xs text-muted-foreground mt-1">Late arrivals</p>
           </CardContent>
         </Card>
       </div>

@@ -73,7 +73,6 @@ export default function TimeAttendancePage() {
     total: records.length,
     present: records.filter((r: Attendance) => r.status === "present").length,
     absent: records.filter((r: Attendance) => r.status === "absent").length,
-    late: records.filter((r: Attendance) => r.time_in && new Date(r.time_in).getHours() > 8).length,
   }
 
   async function handleClockIn() {
@@ -332,14 +331,6 @@ export default function TimeAttendancePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{stats.absent}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Late</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-600">{stats.late}</div>
           </CardContent>
         </Card>
       </div>
