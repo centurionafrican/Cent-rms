@@ -20,7 +20,8 @@ const STATUS_OPTIONS = [
   { value: "probation", label: "Probation", color: "bg-amber-100 text-amber-700 border-amber-200" },
   { value: "active", label: "Full Active", color: "bg-green-100 text-green-700 border-green-200" },
   { value: "retired", label: "Retired", color: "bg-gray-100 text-gray-600 border-gray-200" },
-  { value: "quit", label: "Quit", color: "bg-orange-100 text-orange-700 border-orange-200" },
+  { value: "abandon", label: "Abandon", color: "bg-orange-100 text-orange-700 border-orange-200" },
+  { value: "resigned", label: "Resigned", color: "bg-orange-200 text-orange-800 border-orange-300" },
   { value: "dismissed", label: "Dismissed", color: "bg-red-100 text-red-700 border-red-200" },
   { value: "deceased", label: "Deceased", color: "bg-gray-200 text-gray-800 border-gray-300" },
 ]
@@ -32,7 +33,7 @@ function getStatusBadge(status: string) {
 interface Attachment { url: string; filename: string; type: string; size: number; uploaded_at: string }
 
 type Guard = {
-  id: number; first_name: string; last_name: string; email: string | null; phone: string | null
+  id: number; first_name: string; last_name: string; email: string | null; phone: string | null; guard_code: string | null
   title: string | null; id_number: string | null; hire_date: string | null; date_joined: string | null
   status: string; annual_leave_days: number; leave_days_used: number; attachments: Attachment[] | null; created_at: string
   guard_title?: string | null; gender?: string | null; education_level?: string | null; languages_spoken?: string[] | null; discipline?: string | null; special_skills?: string[] | null; maternity_status?: string | null
@@ -75,7 +76,7 @@ export default function GuardsPage() {
   const importFileRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
-    first_name: "", last_name: "", email: "", phone: "", title: "Security Guard",
+    first_name: "", last_name: "", email: "", phone: "", guard_code: "", title: "Security Guard",
     status: "recruitment", id_number: "", annual_leave_days: "21", date_joined: new Date().toISOString().split("T")[0],
     guard_title: "", gender: "", education_level: "", languages_spoken: [] as string[], discipline: "Excellent", special_skills: [] as string[], maternity_status: "Not Applicable",
   })
@@ -92,7 +93,7 @@ export default function GuardsPage() {
   }
 
   function resetForm() {
-    setFormData({ first_name: "", last_name: "", email: "", phone: "", title: "Security Guard", status: "recruitment", id_number: "", annual_leave_days: "21", date_joined: new Date().toISOString().split("T")[0], guard_title: "", gender: "", education_level: "", languages_spoken: [], discipline: "Excellent", special_skills: [], maternity_status: "Not Applicable" })
+    setFormData({ first_name: "", last_name: "", email: "", phone: "", guard_code: "", title: "Security Guard", status: "recruitment", id_number: "", annual_leave_days: "21", date_joined: new Date().toISOString().split("T")[0], guard_title: "", gender: "", education_level: "", languages_spoken: [], discipline: "Excellent", special_skills: [], maternity_status: "Not Applicable" })
     setPendingFiles([])
   }
 
@@ -190,7 +191,7 @@ export default function GuardsPage() {
 
   function openEdit(guard: Guard) {
     setSelectedGuard(guard)
-    setFormData({ first_name: guard.first_name, last_name: guard.last_name, email: guard.email || "", phone: guard.phone || "", title: guard.title || "Security Guard", status: guard.status, id_number: guard.id_number || "", annual_leave_days: String(guard.annual_leave_days || 21), date_joined: guard.date_joined || "", guard_title: guard.guard_title || "", gender: guard.gender || "", education_level: guard.education_level || "", languages_spoken: guard.languages_spoken || [], discipline: guard.discipline || "Excellent", special_skills: guard.special_skills || [], maternity_status: guard.maternity_status || "Not Applicable" })
+    setFormData({ first_name: guard.first_name, last_name: guard.last_name, email: guard.email || "", phone: guard.phone || "", guard_code: guard.guard_code || "", title: guard.title || "Security Guard", status: guard.status, id_number: guard.id_number || "", annual_leave_days: String(guard.annual_leave_days || 21), date_joined: guard.date_joined || "", guard_title: guard.guard_title || "", gender: guard.gender || "", education_level: guard.education_level || "", languages_spoken: guard.languages_spoken || [], discipline: guard.discipline || "Excellent", special_skills: guard.special_skills || [], maternity_status: guard.maternity_status || "Not Applicable" })
     setPendingFiles([])
     setIsEditOpen(true)
   }
@@ -360,7 +361,7 @@ export default function GuardsPage() {
 
   const filtered = guards.filter((g) => {
     const q = searchQuery.toLowerCase()
-    const matchSearch = `${g.first_name} ${g.last_name} ${g.email || ""} ${g.phone || ""} ${g.id_number || ""}`.toLowerCase().includes(q)
+    const matchSearch = `${g.first_name} ${g.last_name} ${g.guard_code || ""} ${g.email || ""} ${g.phone || ""} ${g.id_number || ""}`.toLowerCase().includes(q)
     const matchStatus = statusFilter === "all" || g.status === statusFilter
     return matchSearch && matchStatus
   })
@@ -406,6 +407,9 @@ export default function GuardsPage() {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>ID Number</Label><Input value={formData.id_number} onChange={(e) => setFormData({ ...formData, id_number: e.target.value })} placeholder="ID Number" /></div>
+        <div className="space-y-2"><Label>Guard Code</Label><Input value={formData.guard_code} onChange={(e) => setFormData({ ...formData, guard_code: e.target.value })} placeholder="Guard Code (e.g., GRD001)" /></div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>Date Joined</Label><Input type="date" value={formData.date_joined} onChange={(e) => setFormData({ ...formData, date_joined: e.target.value })} /></div>
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -602,6 +606,7 @@ export default function GuardsPage() {
                     <Checkbox checked={filtered.length > 0 && filtered.every((g) => selectedIds.has(g.id))} onCheckedChange={() => selectAllFiltered()} />
                   </TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead>Guard Code</TableHead>
                   <TableHead>ID Number</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Phase</TableHead>
@@ -612,7 +617,7 @@ export default function GuardsPage() {
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="h-24 text-center">No guards found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="h-24 text-center">No guards found.</TableCell></TableRow>
                 ) : (filtered.slice(0, showAll ? filtered.length : 3)).map((guard) => {
                   const badge = getStatusBadge(guard.status)
                   const leaveRemaining = (guard.annual_leave_days || 21) - (guard.leave_days_used || 0)
@@ -624,6 +629,7 @@ export default function GuardsPage() {
                   <div className="font-medium">{guard.first_name} {guard.last_name}</div>
                   <div className="text-xs text-muted-foreground">{guard.guard_title || guard.title || "Security Guard"}</div>
                 </TableCell>
+                      <TableCell className="font-mono text-sm font-semibold">{guard.guard_code || "-"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{guard.id_number || "-"}</TableCell>
                       <TableCell>
                         <div className="text-sm">{guard.phone || "-"}</div>

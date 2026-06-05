@@ -233,6 +233,7 @@ export default function ClientsPage() {
                 <TableHead>Contact Person</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>District</TableHead>
+                <TableHead>Sector</TableHead>
                 <TableHead>Sites</TableHead>
                 <TableHead>Guards Needed</TableHead>
                 <TableHead>Status</TableHead>
@@ -241,7 +242,7 @@ export default function ClientsPage() {
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">No clients found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">No clients found.</TableCell></TableRow>
               ) : filtered.map((client, idx) => (
                 <TableRow
                   key={client.id}
@@ -260,9 +261,10 @@ export default function ClientsPage() {
                     {client.name}
                     <ChevronRight className="h-3 w-3 text-muted-foreground" />
                   </TableCell>
-                  <TableCell>{client.contact_person || "-"}</TableCell>
-                  <TableCell>{client.contact_phone || "-"}</TableCell>
+                  <TableCell><span title={client.contact_person || ""}>{client.contact_person || "-"}</span></TableCell>
+                  <TableCell><span title={client.contact_phone || ""}>{client.contact_phone || "-"}</span></TableCell>
                   <TableCell>{client.district || "-"}</TableCell>
+                  <TableCell>{client.sector || "-"}</TableCell>
                   <TableCell><Badge variant="outline">{Number(client.site_count) || 0} sites</Badge></TableCell>
                   <TableCell><Badge variant="secondary">{Number(client.total_guards_needed) || 0} guards</Badge></TableCell>
                   <TableCell>
@@ -411,20 +413,20 @@ export default function ClientsPage() {
           <form onSubmit={handleCreate} className="flex flex-col flex-1 overflow-hidden">
             <div className="grid grid-cols-2 gap-4 overflow-y-auto flex-1 pr-1 py-2">
               <div className="col-span-2 space-y-2">
-                <Label>Company Name *</Label>
-                <Input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                <Label className="text-base font-semibold">Primary Contact Details</Label>
+                <p className="text-xs text-muted-foreground">Add additional contacts in the "Client Contacts" section in the detail view</p>
               </div>
               <div className="space-y-2">
-                <Label>Contact Person</Label>
-                <Input value={formData.contact_person} onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })} />
+                <Label>Contact Person *</Label>
+                <Input required value={formData.contact_person} onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })} placeholder="Main contact name" />
               </div>
               <div className="space-y-2">
                 <Label>Contact Email</Label>
-                <Input type="email" value={formData.contact_email} onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })} />
+                <Input type="email" value={formData.contact_email} onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })} placeholder="Primary email" />
               </div>
               <div className="space-y-2">
                 <Label>Contact Phone</Label>
-                <Input value={formData.contact_phone} onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })} />
+                <Input value={formData.contact_phone} onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })} placeholder="Primary phone" />
               </div>
               <div className="space-y-2">
                 <Label>District</Label>
@@ -454,17 +456,21 @@ export default function ClientsPage() {
                 <Label>Company Name *</Label>
                 <Input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
               </div>
+              <div className="col-span-2 space-y-2">
+                <Label className="text-base font-semibold">Primary Contact Details</Label>
+                <p className="text-xs text-muted-foreground">Add additional contacts in the "Client Contacts" section below</p>
+              </div>
               <div className="space-y-2">
-                <Label>Contact Person</Label>
-                <Input value={formData.contact_person} onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })} />
+                <Label>Contact Person *</Label>
+                <Input required value={formData.contact_person} onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })} placeholder="Main contact name" />
               </div>
               <div className="space-y-2">
                 <Label>Contact Email</Label>
-                <Input type="email" value={formData.contact_email} onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })} />
+                <Input type="email" value={formData.contact_email} onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })} placeholder="Primary email" />
               </div>
               <div className="space-y-2">
                 <Label>Contact Phone</Label>
-                <Input value={formData.contact_phone} onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })} />
+                <Input value={formData.contact_phone} onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })} placeholder="Primary phone" />
               </div>
               <div className="space-y-2">
                 <Label>District</Label>
