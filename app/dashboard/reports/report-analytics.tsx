@@ -124,7 +124,6 @@ export function GuardAnalytics({ dateFrom, dateTo }: ReportAnalyticsProps) {
                 <Legend />
                 <Line type="monotone" dataKey="present" stroke="#10b981" name="Present" />
                 <Line type="monotone" dataKey="absent" stroke="#ef4444" name="Absent" />
-                <Line type="monotone" dataKey="late" stroke="#f59e0b" name="Late" />
               </LineChart>
             </ResponsiveContainer>
           </div>

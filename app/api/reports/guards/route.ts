@@ -7,6 +7,7 @@ export async function GET() {
     const guards = await sql`
       SELECT 
         ROW_NUMBER() OVER (ORDER BY first_name, last_name) AS "#",
+        guard_code,
         first_name,
         last_name,
         email,
@@ -20,6 +21,7 @@ export async function GET() {
         employment_status,
         date_joined,
         hire_date,
+        daily_rate,
         education_level,
         discipline,
         languages_spoken,
@@ -35,6 +37,7 @@ export async function GET() {
 
     const headers = [
       "#",
+      "Guard Code",
       "First Name",
       "Last Name",
       "Email",
@@ -48,6 +51,7 @@ export async function GET() {
       "Employment Status",
       "Date Joined",
       "Hire Date",
+      "Daily Rate (RWF)",
       "Education Level",
       "Discipline Level",
       "Languages Spoken",
@@ -61,6 +65,7 @@ export async function GET() {
 
     const rows = guards.map(g => [
       g["#"],
+      g.guard_code || "",
       g.first_name,
       g.last_name,
       g.email || "",
@@ -74,6 +79,7 @@ export async function GET() {
       g.employment_status || "",
       g.date_joined || "",
       g.hire_date || "",
+      g.daily_rate ?? "",
       g.education_level || "",
       g.discipline || "",
       Array.isArray(g.languages_spoken) ? g.languages_spoken.join(", ") : g.languages_spoken || "",

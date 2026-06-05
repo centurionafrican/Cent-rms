@@ -33,7 +33,7 @@ import {
   UserCog,
   Building2,
   Contact,
-  DollarSign,
+  Wallet,
 } from "lucide-react"
 
 interface HeaderProps {
@@ -56,7 +56,7 @@ const navigation = [
   { name: "Assignments", href: "/dashboard/assignments", icon: CalendarCheck },
   { name: "Time & Attendance", href: "/dashboard/attendance", icon: Timer },
   { name: "Leaves", href: "/dashboard/leaves", icon: CalendarX },
-  { name: "Payroll", href: "/dashboard/payroll", icon: DollarSign },
+  { name: "Payroll", href: "/dashboard/payroll", icon: Wallet },
   { name: "Incidents", href: "/dashboard/incidents", icon: AlertTriangle },
   { name: "Guard Portal", href: "/dashboard/guard-portal", icon: Contact },
   { name: "Reports", href: "/dashboard/reports", icon: FileText },
