@@ -270,14 +270,20 @@ export default function SitesPage() {
           <Input value={formData.sector} onChange={(e) => setFormData({ ...formData, sector: e.target.value })} placeholder="e.g., Kimironko" />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Contact Person</Label>
-          <Input value={formData.contact_person} onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })} />
+      <div className="space-y-3">
+        <div>
+          <Label className="text-base font-semibold">Primary Contact Details</Label>
+          <p className="text-xs text-muted-foreground mt-1">Add additional contacts in the "Site Contacts" section in the detail view</p>
         </div>
-        <div className="space-y-2">
-          <Label>Contact Phone</Label>
-          <Input value={formData.contact_phone} onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })} />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Contact Person *</Label>
+            <Input required value={formData.contact_person} onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })} placeholder="Primary contact name" />
+          </div>
+          <div className="space-y-2">
+            <Label>Contact Phone</Label>
+            <Input value={formData.contact_phone} onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })} placeholder="Primary phone" />
+          </div>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
