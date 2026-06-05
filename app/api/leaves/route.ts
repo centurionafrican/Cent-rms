@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
 import { getSession } from "@/lib/auth"
+import { notifyApprovalRequest } from "@/lib/notifications"
 
 export async function GET() {
   try {
@@ -42,6 +43,22 @@ export async function POST(request: Request) {
       VALUES (${guard_id}, ${leave_type}, ${start_date}, ${end_date}, ${reason || null}, 'pending')
       RETURNING *
     `
+
+    // Notify Roster Manager about new leave request
+    try {
+      const guardInfo = await sql`SELECT first_name || ' ' || last_name as name FROM guards WHERE id = ${guard_id}`
+      if (guardInfo.length > 0) {
+        await notifyApprovalRequest(
+          "leave",
+          result[0].id,
+          "roster_manager",
+          guardInfo[0].name,
+          `${leave_type} leave from ${new Date(start_date).toLocaleDateString()} to ${new Date(end_date).toLocaleDateString()}`
+        )
+      }
+    } catch (notifyErr) {
+      console.error("[leaves] Notification failed:", notifyErr)
+    }
 
     return NextResponse.json({ leave: result[0] }, { status: 201 })
   } catch (error) {

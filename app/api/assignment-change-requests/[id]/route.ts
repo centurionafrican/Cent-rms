@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
+import { notifyApprovalRequest } from "@/lib/notifications"
 
 // PATCH — roster manager verify, approve/reject, or execute assignment change requests
 export async function PATCH(
@@ -26,6 +27,31 @@ export async function PATCH(
         WHERE id = ${Number(id)}
         RETURNING *
       `
+      
+      // Notify Operations Manager that request is verified and awaiting their approval
+      try {
+        const [details] = await sql`
+          SELECT g.first_name || ' ' || g.last_name as guard_name,
+                 s.name as site_name, acr.reason
+          FROM assignment_change_requests acr
+          JOIN guards g ON g.id = acr.current_guard_id
+          JOIN assignments a ON a.id = acr.assignment_id
+          JOIN sites s ON s.id = a.site_id
+          WHERE acr.id = ${Number(id)}
+        `
+        if (details) {
+          await notifyApprovalRequest(
+            "assignment_change",
+            Number(id),
+            "operations_manager",
+            details.guard_name,
+            `Change request for ${details.site_name}: ${details.reason}`
+          )
+        }
+      } catch (notifyErr) {
+        console.error("[ACR] Notification failed:", notifyErr)
+      }
+      
       return NextResponse.json(updated)
     }
 

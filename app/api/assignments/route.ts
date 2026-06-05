@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
 import { sendEmail, assignmentNotificationEmail } from "@/lib/email"
+import { notifyGuardAssignment } from "@/lib/notifications"
 
 export async function GET(request: Request) {
   try {
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
 
     try {
       const guardInfo = await sql`
-        SELECT g.first_name, g.last_name, g.email,
+        SELECT g.first_name, g.last_name, g.email, g.phone,
                s.name as site_name,
                sh.name as shift_name, sh.start_time, sh.end_time
         FROM guards g
@@ -86,24 +87,33 @@ export async function POST(request: Request) {
         JOIN shifts sh ON sh.id = ${shift_id}
         WHERE g.id = ${guard_id}
       `
-      if (guardInfo.length > 0 && guardInfo[0].email) {
+      if (guardInfo.length > 0) {
         const g = guardInfo[0]
-        await sendEmail({
-          to: g.email,
-          subject: `New Assignment — ${g.site_name} on ${new Date(date).toLocaleDateString()}`,
-          html: assignmentNotificationEmail({
-            guardName: `${g.first_name} ${g.last_name}`,
-            siteName: g.site_name,
-            shiftName: g.shift_name,
-            shiftStart: g.start_time,
-            shiftEnd: g.end_time,
-            date,
-            portalUrl: `${baseUrl}/guard-portal`,
-          }),
-        })
+        
+        // Send SMS notification to guard's phone
+        if (g.phone) {
+          await notifyGuardAssignment(guard_id, g.site_name, g.shift_name, date)
+        }
+        
+        // Send email notification if guard has email
+        if (g.email) {
+          await sendEmail({
+            to: g.email,
+            subject: `New Assignment — ${g.site_name} on ${new Date(date).toLocaleDateString()}`,
+            html: assignmentNotificationEmail({
+              guardName: `${g.first_name} ${g.last_name}`,
+              siteName: g.site_name,
+              shiftName: g.shift_name,
+              shiftStart: g.start_time,
+              shiftEnd: g.end_time,
+              date,
+              portalUrl: `${baseUrl}/guard-portal`,
+            }),
+          })
+        }
       }
-    } catch (emailErr) {
-      console.error("[assignments] Email notification failed:", emailErr)
+    } catch (notifyErr) {
+      console.error("[assignments] Notification failed:", notifyErr)
     }
 
     return NextResponse.json({ assignment: result[0] }, { status: 201 })

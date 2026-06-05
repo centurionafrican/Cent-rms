@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
 import { getSession } from "@/lib/auth"
+import { notifyApprovalRequest } from "@/lib/notifications"
 
 export async function PATCH(
   request: Request,
@@ -90,6 +91,23 @@ export async function PATCH(
           roster_manager_approved_at = NOW()
         WHERE id = ${id}
       `
+      // Notify Operations Manager for next approval
+      const guardInfo = await sql`
+        SELECT g.first_name || ' ' || g.last_name as name, lr.leave_type, lr.start_date, lr.end_date
+        FROM leave_requests lr
+        JOIN guards g ON g.id = lr.guard_id
+        WHERE lr.id = ${id}
+      `
+      if (guardInfo.length > 0) {
+        const g = guardInfo[0]
+        await notifyApprovalRequest(
+          "leave",
+          parseInt(id),
+          "operations_manager",
+          g.name,
+          `${g.leave_type} leave from ${new Date(g.start_date).toLocaleDateString()} to ${new Date(g.end_date).toLocaleDateString()}`
+        )
+      }
     } else if (approval_step === "ops_manager") {
       await sql`
         UPDATE leave_requests SET
@@ -98,6 +116,23 @@ export async function PATCH(
           ops_manager_approved_at = NOW()
         WHERE id = ${id}
       `
+      // Notify HR for next approval
+      const guardInfo = await sql`
+        SELECT g.first_name || ' ' || g.last_name as name, lr.leave_type, lr.start_date, lr.end_date
+        FROM leave_requests lr
+        JOIN guards g ON g.id = lr.guard_id
+        WHERE lr.id = ${id}
+      `
+      if (guardInfo.length > 0) {
+        const g = guardInfo[0]
+        await notifyApprovalRequest(
+          "leave",
+          parseInt(id),
+          "hr",
+          g.name,
+          `${g.leave_type} leave from ${new Date(g.start_date).toLocaleDateString()} to ${new Date(g.end_date).toLocaleDateString()}`
+        )
+      }
     } else if (approval_step === "hr") {
       await sql`
         UPDATE leave_requests SET
@@ -106,6 +141,23 @@ export async function PATCH(
           hr_approved_at = NOW()
         WHERE id = ${id}
       `
+      // Notify Co-CEO for final approval
+      const guardInfo = await sql`
+        SELECT g.first_name || ' ' || g.last_name as name, lr.leave_type, lr.start_date, lr.end_date
+        FROM leave_requests lr
+        JOIN guards g ON g.id = lr.guard_id
+        WHERE lr.id = ${id}
+      `
+      if (guardInfo.length > 0) {
+        const g = guardInfo[0]
+        await notifyApprovalRequest(
+          "leave",
+          parseInt(id),
+          "coceo",
+          g.name,
+          `${g.leave_type} leave from ${new Date(g.start_date).toLocaleDateString()} to ${new Date(g.end_date).toLocaleDateString()}`
+        )
+      }
     } else if (approval_step === "coceo") {
       // Final approval - mark leave as approved
       await sql`
