@@ -34,7 +34,7 @@ interface Attachment { url: string; filename: string; type: string; size: number
 
 type Guard = {
   id: number; first_name: string; last_name: string; email: string | null; phone: string | null; guard_code: string | null
-  title: string | null; id_number: string | null; hire_date: string | null; date_joined: string | null
+  title: string | null; id_number: string | null; hire_date: string | null; date_joined: string | null; daily_rate: number | null
   status: string; annual_leave_days: number; leave_days_used: number; attachments: Attachment[] | null; created_at: string
   guard_title?: string | null; gender?: string | null; education_level?: string | null; languages_spoken?: string[] | null; discipline?: string | null; special_skills?: string[] | null; maternity_status?: string | null
 }
@@ -77,7 +77,7 @@ export default function GuardsPage() {
 
   const [formData, setFormData] = useState({
     first_name: "", last_name: "", email: "", phone: "", guard_code: "", title: "Security Guard",
-    status: "recruitment", id_number: "", annual_leave_days: "21", date_joined: new Date().toISOString().split("T")[0],
+    status: "recruitment", id_number: "", annual_leave_days: "21", daily_rate: "0", date_joined: new Date().toISOString().split("T")[0],
     guard_title: "", gender: "", education_level: "", languages_spoken: [] as string[], discipline: "Excellent", special_skills: [] as string[], maternity_status: "Not Applicable",
   })
 
@@ -93,7 +93,7 @@ export default function GuardsPage() {
   }
 
   function resetForm() {
-    setFormData({ first_name: "", last_name: "", email: "", phone: "", guard_code: "", title: "Security Guard", status: "recruitment", id_number: "", annual_leave_days: "21", date_joined: new Date().toISOString().split("T")[0], guard_title: "", gender: "", education_level: "", languages_spoken: [], discipline: "Excellent", special_skills: [], maternity_status: "Not Applicable" })
+    setFormData({ first_name: "", last_name: "", email: "", phone: "", guard_code: "", title: "Security Guard", status: "recruitment", id_number: "", annual_leave_days: "21", daily_rate: "0", date_joined: new Date().toISOString().split("T")[0], guard_title: "", gender: "", education_level: "", languages_spoken: [], discipline: "Excellent", special_skills: [], maternity_status: "Not Applicable" })
     setPendingFiles([])
   }
 
@@ -117,7 +117,7 @@ export default function GuardsPage() {
       const allAttachments = [...pendingFiles]
       const res = await fetch("/api/guards", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, annual_leave_days: Number.parseInt(formData.annual_leave_days) || 21, attachments: JSON.stringify(allAttachments) }),
+        body: JSON.stringify({ ...formData, annual_leave_days: Number.parseInt(formData.annual_leave_days) || 21, daily_rate: Number.parseFloat(formData.daily_rate) || 0, attachments: JSON.stringify(allAttachments) }),
       })
       if (res.ok) { setIsCreateOpen(false); resetForm(); fetchGuards() }
     } catch (error) { console.error(error) }
@@ -132,7 +132,7 @@ export default function GuardsPage() {
       const allAttachments = [...existingAttachments, ...pendingFiles]
       const res = await fetch(`/api/guards/${selectedGuard.id}`, {
         method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, annual_leave_days: Number.parseInt(formData.annual_leave_days) || 21, attachments: JSON.stringify(allAttachments) }),
+        body: JSON.stringify({ ...formData, annual_leave_days: Number.parseInt(formData.annual_leave_days) || 21, daily_rate: Number.parseFloat(formData.daily_rate) || 0, attachments: JSON.stringify(allAttachments) }),
       })
       if (res.ok) { setIsEditOpen(false); setSelectedGuard(null); resetForm(); fetchGuards() }
     } catch (error) { console.error(error) }
@@ -191,7 +191,7 @@ export default function GuardsPage() {
 
   function openEdit(guard: Guard) {
     setSelectedGuard(guard)
-    setFormData({ first_name: guard.first_name, last_name: guard.last_name, email: guard.email || "", phone: guard.phone || "", guard_code: guard.guard_code || "", title: guard.title || "Security Guard", status: guard.status, id_number: guard.id_number || "", annual_leave_days: String(guard.annual_leave_days || 21), date_joined: guard.date_joined || "", guard_title: guard.guard_title || "", gender: guard.gender || "", education_level: guard.education_level || "", languages_spoken: guard.languages_spoken || [], discipline: guard.discipline || "Excellent", special_skills: guard.special_skills || [], maternity_status: guard.maternity_status || "Not Applicable" })
+    setFormData({ first_name: guard.first_name, last_name: guard.last_name, email: guard.email || "", phone: guard.phone || "", guard_code: guard.guard_code || "", title: guard.title || "Security Guard", status: guard.status, id_number: guard.id_number || "", annual_leave_days: String(guard.annual_leave_days || 21), daily_rate: String(guard.daily_rate || 0), date_joined: guard.date_joined || "", guard_title: guard.guard_title || "", gender: guard.gender || "", education_level: guard.education_level || "", languages_spoken: guard.languages_spoken || [], discipline: guard.discipline || "Excellent", special_skills: guard.special_skills || [], maternity_status: guard.maternity_status || "Not Applicable" })
     setPendingFiles([])
     setIsEditOpen(true)
   }
@@ -411,6 +411,7 @@ export default function GuardsPage() {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>Date Joined</Label><Input type="date" value={formData.date_joined} onChange={(e) => setFormData({ ...formData, date_joined: e.target.value })} /></div>
+        <div className="space-y-2"><Label>Daily Rate (RWF)</Label><Input type="number" min="0" step="100" value={formData.daily_rate} onChange={(e) => setFormData({ ...formData, daily_rate: e.target.value })} placeholder="0" /></div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>Email</Label><Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} /></div>

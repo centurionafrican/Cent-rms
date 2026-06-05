@@ -20,6 +20,7 @@ import {
   Contact,
   ArrowLeftRight,
   CalendarOff,
+  DollarSign,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -37,6 +38,7 @@ const navigation = [
   { name: "Guard Off Days", href: "/dashboard/guard-offs", icon: CalendarOff },
   { name: "Time & Attendance", href: "/dashboard/time-attendance", icon: Timer },
   { name: "Leaves", href: "/dashboard/leaves", icon: CalendarX },
+  { name: "Payroll", href: "/dashboard/payroll", icon: DollarSign },
   { name: "Incidents", href: "/dashboard/incidents", icon: AlertTriangle },
   { name: "Guard Portal", href: "/dashboard/guard-portal", icon: Contact },
   { name: "Reports", href: "/dashboard/reports", icon: FileText },
