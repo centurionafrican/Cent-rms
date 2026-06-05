@@ -179,3 +179,61 @@ export async function PATCH(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
+// PUT - update leave request dates/reason (only if not approved)
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const body = await request.json()
+    const { start_date, end_date, reason } = body
+
+    // Check if leave exists and is not already approved
+    const existing = await sql`SELECT * FROM leave_requests WHERE id = ${id}`
+    if (existing.length === 0) {
+      return NextResponse.json({ error: "Leave request not found" }, { status: 404 })
+    }
+
+    if (existing[0].status === "approved") {
+      return NextResponse.json({ error: "Cannot edit an approved leave request" }, { status: 400 })
+    }
+
+    const [updated] = await sql`
+      UPDATE leave_requests SET
+        start_date = COALESCE(${start_date}::date, start_date),
+        end_date = COALESCE(${end_date}::date, end_date),
+        reason = COALESCE(${reason}, reason)
+      WHERE id = ${id}
+      RETURNING *
+    `
+
+    return NextResponse.json({ leave: updated })
+  } catch (error) {
+    console.error("Error updating leave request:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
+// DELETE - delete a leave request
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    const existing = await sql`SELECT * FROM leave_requests WHERE id = ${id}`
+    if (existing.length === 0) {
+      return NextResponse.json({ error: "Leave request not found" }, { status: 404 })
+    }
+
+    await sql`DELETE FROM leave_requests WHERE id = ${id}`
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Error deleting leave request:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}

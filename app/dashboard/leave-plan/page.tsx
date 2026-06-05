@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -29,7 +30,17 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { Calendar, Users, Download, Plus, ChevronLeft, ChevronRight, Trash2, CalendarRange } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Calendar, Users, Download, Plus, ChevronLeft, ChevronRight, Trash2, CalendarRange, Search, Pencil } from "lucide-react"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -70,21 +81,40 @@ export default function LeavePlanPage() {
   const [year, setYear] = useState(currentYear)
   const [month, setMonth] = useState(currentMonth)
   const [isAddOpen, setIsAddOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
   const [selectedGuard, setSelectedGuard] = useState("")
   const [dateRanges, setDateRanges] = useState<DateRange[]>([{ id: "1", start_date: "", end_date: "" }])
   const [reason, setReason] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [search, setSearch] = useState("")
+  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [editLeave, setEditLeave] = useState<LeaveRequest | null>(null)
+  const [editStartDate, setEditStartDate] = useState("")
+  const [editEndDate, setEditEndDate] = useState("")
+  const [editReason, setEditReason] = useState("")
 
   // Full year date range for annual leave planning
   const yearStart = `${year}-01-01`
   const yearEnd = `${year}-12-31`
 
-  const { data: leavesData, mutate } = useSWR(`/api/leaves?from=${yearStart}&to=${yearEnd}&type=Annual Leave`, fetcher)
+  const { data: leavesData, mutate } = useSWR(`/api/leaves?from=${yearStart}&to=${yearEnd}`, fetcher, { refreshInterval: 5000 })
   const { data: guardsData } = useSWR("/api/guards", fetcher)
 
-  const leaves: LeaveRequest[] = (leavesData?.leaves || []).filter((l: LeaveRequest) => l.leave_type === "Annual Leave")
+  const allLeaves: LeaveRequest[] = leavesData?.leaves || []
+  const leaves: LeaveRequest[] = allLeaves.filter((l: LeaveRequest) => l.leave_type === "Annual Leave")
   const allGuards: Guard[] = Array.isArray(guardsData) ? guardsData : guardsData?.guards || []
   const guards = allGuards.filter((g) => g.status === "active")
+
+  // Filter leaves by search
+  const filteredLeaves = leaves.filter((l) => {
+    if (!search) return true
+    const searchLower = search.toLowerCase()
+    return (
+      l.guard_name?.toLowerCase().includes(searchLower) ||
+      l.guard_code?.toLowerCase().includes(searchLower) ||
+      l.status?.toLowerCase().includes(searchLower)
+    )
+  })
 
   // Generate calendar days for selected month
   const firstDay = new Date(year, month, 1)
@@ -152,7 +182,7 @@ export default function LeavePlanPage() {
   const pending = leaves.filter((l) => l.status === "pending").length
   const totalDays = leaves.reduce((sum, l) => sum + getWorkingDays(l.start_date, l.end_date), 0)
 
-  // Group leaves by guard for the list view
+  // Group leaves by guard for the summary view
   const leavesByGuard = guards.map((guard) => {
     const guardLeaves = leaves.filter((l) => l.guard_id === guard.id)
     const totalDaysPlanned = guardLeaves.reduce((sum, l) => sum + getWorkingDays(l.start_date, l.end_date), 0)
@@ -164,7 +194,18 @@ export default function LeavePlanPage() {
       remaining,
       entitlement: guard.annual_leave_days || 21,
     }
-  }).filter((g) => g.leaves.length > 0 || g.remaining > 0)
+  }).filter((g) => g.leaves.length > 0)
+
+  // Filter by search
+  const filteredLeavesByGuard = leavesByGuard.filter((item) => {
+    if (!search) return true
+    const searchLower = search.toLowerCase()
+    return (
+      item.guard.first_name.toLowerCase().includes(searchLower) ||
+      item.guard.last_name.toLowerCase().includes(searchLower) ||
+      item.guard.guard_code?.toLowerCase().includes(searchLower)
+    )
+  })
 
   function getStatusColor(status: string) {
     switch (status) {
@@ -183,7 +224,7 @@ export default function LeavePlanPage() {
     try {
       // Create a leave request for each date range
       for (const range of validRanges) {
-        await fetch("/api/leaves", {
+        const res = await fetch("/api/leaves", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -194,45 +235,91 @@ export default function LeavePlanPage() {
             reason: reason || `Annual Leave Plan ${year}`,
           }),
         })
+        if (!res.ok) {
+          const err = await res.json()
+          alert(err.error || "Failed to create leave request")
+          return
+        }
       }
-      mutate()
+      // Refresh the list
+      await mutate()
       setIsAddOpen(false)
       setSelectedGuard("")
       setDateRanges([{ id: "1", start_date: "", end_date: "" }])
       setReason("")
     } catch (error) {
       console.error("Failed to create leave requests:", error)
+      alert("Failed to create leave requests")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteId) return
+    try {
+      const res = await fetch(`/api/leaves/${deleteId}`, { method: "DELETE" })
+      if (res.ok) {
+        await mutate()
+      } else {
+        const err = await res.json()
+        alert(err.error || "Failed to delete")
+      }
+    } catch (error) {
+      console.error("Delete failed:", error)
+    } finally {
+      setDeleteId(null)
+    }
+  }
+
+  function openEdit(leave: LeaveRequest) {
+    setEditLeave(leave)
+    setEditStartDate(leave.start_date)
+    setEditEndDate(leave.end_date)
+    setEditReason(leave.reason || "")
+    setIsEditOpen(true)
+  }
+
+  async function handleEdit() {
+    if (!editLeave) return
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/leaves/${editLeave.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          start_date: editStartDate,
+          end_date: editEndDate,
+          reason: editReason,
+        }),
+      })
+      if (res.ok) {
+        await mutate()
+        setIsEditOpen(false)
+        setEditLeave(null)
+      } else {
+        const err = await res.json()
+        alert(err.error || "Failed to update")
+      }
+    } catch (error) {
+      console.error("Update failed:", error)
     } finally {
       setSubmitting(false)
     }
   }
 
   function exportToCSV() {
-    const headers = ["Guard Name", "Guard Code", "Leave Period", "Start Date", "End Date", "Working Days", "Status", "Entitlement", "Used", "Remaining"]
-    const rows = leavesByGuard.flatMap((item) => 
-      item.leaves.length > 0 
-        ? item.leaves.map((leave, idx) => [
-            idx === 0 ? `${item.guard.first_name} ${item.guard.last_name}` : "",
-            idx === 0 ? item.guard.guard_code || "" : "",
-            `Period ${idx + 1}`,
-            leave.start_date,
-            leave.end_date,
-            getWorkingDays(leave.start_date, leave.end_date),
-            leave.status,
-            idx === 0 ? item.entitlement : "",
-            idx === 0 ? item.guard.leave_days_used || 0 : "",
-            idx === 0 ? item.remaining : "",
-          ])
-        : [[
-            `${item.guard.first_name} ${item.guard.last_name}`,
-            item.guard.guard_code || "",
-            "No leave planned",
-            "", "", "", "",
-            item.entitlement,
-            item.guard.leave_days_used || 0,
-            item.remaining,
-          ]]
-    )
+    const headers = ["#", "Guard Name", "Guard Code", "Start Date", "End Date", "Working Days", "Status", "Reason"]
+    const rows = filteredLeaves.map((leave, idx) => [
+      idx + 1,
+      leave.guard_name,
+      leave.guard_code || "",
+      leave.start_date,
+      leave.end_date,
+      getWorkingDays(leave.start_date, leave.end_date),
+      leave.status,
+      leave.reason || "",
+    ])
     const csv = [headers, ...rows].map((row) => row.join(",")).join("\n")
     const blob = new Blob([csv], { type: "text/csv" })
     const url = URL.createObjectURL(blob)
@@ -389,74 +476,92 @@ export default function LeavePlanPage() {
         </CardContent>
       </Card>
 
-      {/* Guard Leave Summary */}
+      {/* Leave List */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Annual Leave Summary by Guard
-          </CardTitle>
-          <CardDescription>Overview of each guard&apos;s annual leave plan for {year}</CardDescription>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Annual Leave Requests
+              </CardTitle>
+              <CardDescription>All annual leave requests for {year}</CardDescription>
+            </div>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, code..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>#</TableHead>
                 <TableHead>Guard</TableHead>
                 <TableHead>Code</TableHead>
-                <TableHead>Entitlement</TableHead>
-                <TableHead>Planned Periods</TableHead>
-                <TableHead>Days Planned</TableHead>
-                <TableHead>Days Used</TableHead>
-                <TableHead>Remaining</TableHead>
+                <TableHead>Start Date</TableHead>
+                <TableHead>End Date</TableHead>
+                <TableHead>Days</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {leavesByGuard.length === 0 ? (
+              {filteredLeaves.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                     No annual leave plans found for {year}
                   </TableCell>
                 </TableRow>
               ) : (
-                leavesByGuard.map((item) => (
-                  <TableRow key={item.guard.id}>
-                    <TableCell className="font-medium">
-                      {item.guard.first_name} {item.guard.last_name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{item.guard.guard_code || "-"}</TableCell>
-                    <TableCell>{item.entitlement} days</TableCell>
+                filteredLeaves.map((leave, idx) => (
+                  <TableRow key={leave.id}>
+                    <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
+                    <TableCell className="font-medium">{leave.guard_name}</TableCell>
+                    <TableCell className="text-muted-foreground">{leave.guard_code || "-"}</TableCell>
                     <TableCell>
-                      {item.leaves.length > 0 ? (
-                        <div className="space-y-1">
-                          {item.leaves.map((leave, idx) => (
-                            <div key={leave.id} className="text-xs">
-                              <span className="font-medium">Period {idx + 1}:</span>{" "}
-                              {new Date(leave.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - {new Date(leave.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                              <span className="text-muted-foreground ml-1">({getWorkingDays(leave.start_date, leave.end_date)} days)</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">No leave planned</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">{item.totalDaysPlanned}</TableCell>
-                    <TableCell>{item.guard.leave_days_used || 0}</TableCell>
-                    <TableCell className={item.remaining <= 0 ? "text-red-600 font-medium" : "text-green-600 font-medium"}>
-                      {item.remaining}
+                      {new Date(leave.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </TableCell>
                     <TableCell>
-                      {item.leaves.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {item.leaves.map((leave) => (
-                            <Badge key={leave.id} variant="outline" className={getStatusColor(leave.status)}>
-                              {leave.status}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+                      {new Date(leave.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </TableCell>
+                    <TableCell className="font-medium">{getWorkingDays(leave.start_date, leave.end_date)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getStatusColor(leave.status)}>
+                        {leave.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="max-w-[150px] truncate text-muted-foreground" title={leave.reason}>
+                      {leave.reason || "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEdit(leave)}
+                          disabled={leave.status === "approved"}
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleteId(leave.id)}
+                          className="text-destructive hover:text-destructive"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -497,12 +602,11 @@ export default function LeavePlanPage() {
                   return (
                     <div className="text-xs text-muted-foreground space-y-1">
                       <p>Annual entitlement: <span className="font-medium">{guard.annual_leave_days || 21} days</span></p>
-                      <p>Already used: <span className="font-medium">{guard.leave_days_used || 0} days</span></p>
+                      <p>Days used: <span className="font-medium">{guard.leave_days_used || 0} days</span></p>
                       <p>Remaining: <span className={`font-medium ${remaining <= 0 ? "text-red-600" : "text-green-600"}`}>{remaining} days</span></p>
                     </div>
                   )
                 }
-                return null
               })()}
             </div>
 
@@ -514,64 +618,62 @@ export default function LeavePlanPage() {
                   Add Period
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">You can add multiple date ranges for the annual leave plan</p>
-              
               {dateRanges.map((range, idx) => (
-                <div key={range.id} className="flex items-end gap-2 p-3 border rounded-md bg-muted/30">
+                <div key={range.id} className="flex items-end gap-2 p-3 bg-muted/50 rounded-lg">
                   <div className="flex-1 space-y-1">
                     <Label className="text-xs">Period {idx + 1} - Start</Label>
-                    <Input 
-                      type="date" 
-                      value={range.start_date} 
+                    <Input
+                      type="date"
+                      value={range.start_date}
                       onChange={(e) => updateDateRange(range.id, "start_date", e.target.value)}
-                      min={`${year}-01-01`}
-                      max={`${year}-12-31`}
                     />
                   </div>
                   <div className="flex-1 space-y-1">
                     <Label className="text-xs">End</Label>
-                    <Input 
-                      type="date" 
-                      value={range.end_date} 
+                    <Input
+                      type="date"
+                      value={range.end_date}
+                      min={range.start_date}
                       onChange={(e) => updateDateRange(range.id, "end_date", e.target.value)}
-                      min={range.start_date || `${year}-01-01`}
-                      max={`${year}-12-31`}
                     />
                   </div>
-                  <div className="text-xs text-muted-foreground w-16 text-center pb-2">
-                    {range.start_date && range.end_date ? `${getWorkingDays(range.start_date, range.end_date)} days` : "-"}
+                  <div className="text-xs text-muted-foreground whitespace-nowrap pb-2">
+                    {getWorkingDays(range.start_date, range.end_date)} days
                   </div>
                   {dateRanges.length > 1 && (
-                    <Button 
-                      type="button" 
-                      variant="ghost" 
-                      size="icon" 
-                      className="text-destructive hover:text-destructive"
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
                       onClick={() => removeDateRange(range.id)}
+                      className="text-destructive"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   )}
                 </div>
               ))}
-              
-              {getTotalWorkingDays() > 0 && (
-                <div className="flex justify-between items-center p-2 bg-blue-50 rounded-md">
-                  <span className="text-sm font-medium">Total working days:</span>
-                  <span className="text-sm font-bold text-blue-700">{getTotalWorkingDays()} days</span>
+              {dateRanges.length > 1 && (
+                <div className="text-sm font-medium text-right">
+                  Total: {getTotalWorkingDays()} working days
                 </div>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label>Notes</Label>
-              <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Optional notes for this leave plan" />
+              <Label>Reason (optional)</Label>
+              <Textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="e.g., Family vacation, Personal time off"
+                rows={2}
+              />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-            <Button 
-              onClick={handleSubmit} 
+            <Button
+              onClick={handleSubmit}
               disabled={!selectedGuard || dateRanges.every((r) => !r.start_date || !r.end_date) || submitting}
             >
               {submitting ? "Creating..." : `Create ${dateRanges.filter((r) => r.start_date && r.end_date).length} Leave Request(s)`}
@@ -579,6 +681,74 @@ export default function LeavePlanPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Leave Request</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="text-sm text-muted-foreground">
+              Guard: <span className="font-medium text-foreground">{editLeave?.guard_name}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Start Date</Label>
+                <Input
+                  type="date"
+                  value={editStartDate}
+                  onChange={(e) => setEditStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>End Date</Label>
+                <Input
+                  type="date"
+                  value={editEndDate}
+                  min={editStartDate}
+                  onChange={(e) => setEditEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Working days: <span className="font-medium">{getWorkingDays(editStartDate, editEndDate)}</span>
+            </div>
+            <div className="space-y-2">
+              <Label>Reason</Label>
+              <Textarea
+                value={editReason}
+                onChange={(e) => setEditReason(e.target.value)}
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleEdit} disabled={submitting}>
+              {submitting ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Leave Request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this leave request. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
