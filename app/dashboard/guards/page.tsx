@@ -241,15 +241,17 @@ export default function GuardsPage() {
     const COLUMNS: { key: string; label: string; example: string; dropdown?: string[] }[] = [
       { key: "first_name",        label: "First Name *",                   example: "John" },
       { key: "last_name",         label: "Last Name *",                    example: "Doe" },
+      { key: "guard_code",        label: "Guard Code",                     example: "GRD001" },
       { key: "email",             label: "Email",                          example: "john.doe@example.com" },
       { key: "phone",             label: "Phone",                          example: "+250700000000" },
       { key: "id_number",         label: "ID Number",                      example: "1198780123456789" },
       { key: "date_joined",       label: "Date Joined (YYYY-MM-DD)",       example: "2024-01-15" },
+      { key: "daily_rate",        label: "Daily Rate (RWF)",               example: "5000" },
       { key: "title",             label: "Job Title",                      example: "Security Guard" },
       { key: "guard_title",       label: "Guard Title",                    example: "Team Leader",
         dropdown: ["Coordinator", "Supervisor", "Team Leader", "Security Guard"] },
       { key: "status",            label: "Status",                         example: "active",
-        dropdown: ["recruitment", "training", "active", "inactive", "suspended", "terminated"] },
+        dropdown: ["recruitment", "training", "probation", "active", "retired", "abandon", "resigned", "dismissed", "deceased"] },
       { key: "gender",            label: "Gender",                         example: "Male",
         dropdown: ["Male", "Female"] },
       { key: "education_level",   label: "Education Level",                example: "Bachelor's Degree",
@@ -411,6 +413,7 @@ export default function GuardsPage() {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>Date Joined</Label><Input type="date" value={formData.date_joined} onChange={(e) => setFormData({ ...formData, date_joined: e.target.value })} /></div>
+        <div className="space-y-2"><Label>Daily Rate (RWF)</Label><Input type="number" min="0" step="100" value={formData.daily_rate} onChange={(e) => setFormData({ ...formData, daily_rate: e.target.value })} placeholder="0" /></div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>Email</Label><Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} /></div>
