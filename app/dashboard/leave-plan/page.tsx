@@ -229,7 +229,7 @@ export default function LeavePlanPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             guard_id: Number(selectedGuard),
-            leave_type: "Annual Leave",
+            leave_type: "annual",
             start_date: range.start_date,
             end_date: range.end_date,
             reason: reason || `Annual Leave Plan ${year}`,
