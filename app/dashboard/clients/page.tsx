@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Search, Edit, Trash2, Building2, MapPin, Download, Users, Mail, Phone, ChevronRight } from "lucide-react"
+import { ContactsManager } from "@/components/contacts-manager"
 
 interface Site {
   id: number
@@ -381,6 +382,11 @@ export default function ClientsPage() {
                 <h3 className="font-semibold text-sm mb-1">Notes</h3>
                 <p className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3">{viewingClient.notes}</p>
               </div>
+            )}
+
+            {/* Multiple Contacts */}
+            {viewingClient && (
+              <ContactsManager entityId={viewingClient.id} entityType="client" title="Client Contacts" />
             )}
           </div>
           <DialogFooter className="flex-shrink-0 border-t pt-4">

@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Pencil, Trash2, Search, MapPin, Eye, Users, ChevronRight, Download } from "lucide-react"
+import { ContactsManager } from "@/components/contacts-manager"
 
 const SITE_STATUS_OPTIONS = [
   { value: "on_survey", label: "On Survey", color: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -542,6 +543,11 @@ export default function SitesPage() {
                 )}
               </div>
             </div>
+          )}
+
+          {/* Multiple Contacts */}
+          {selectedSite && (
+            <ContactsManager entityId={selectedSite.id} entityType="site" title="Site Contacts" />
           )}
           
           <DialogFooter>
