@@ -284,12 +284,29 @@ export default function GuardsPage() {
     XLSX.utils.book_append_sheet(wb, optWs, "Options")
 
     // Main import sheet — row 1 header, row 2 example, rows 3-500 blank
-    const headerRow  = COLUMNS.map((c) => c.label)
+    // Dropdown columns get a "⮟ Select" marker in the header so users can see
+    // at a glance which cells offer a pick-list in Excel.
+    const headerRow  = COLUMNS.map((c) => (c.dropdown ? `${c.label} ⮟ (Select)` : c.label))
     const exampleRow = COLUMNS.map((c) => c.example)
     const blankRows: string[][] = Array.from({ length: ROW_COUNT - 1 }, () => Array(COLUMNS.length).fill(""))
     const ws = XLSX.utils.aoa_to_sheet([headerRow, exampleRow, ...blankRows])
-    ws["!cols"]   = COLUMNS.map((c) => ({ wch: Math.max(c.label.length, c.example.length, 20) + 2 }))
+    ws["!cols"]   = COLUMNS.map((c) => ({ wch: Math.max((c.dropdown ? c.label.length + 12 : c.label.length), c.example.length, 20) + 2 }))
     ws["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", activeCell: "A2", sqref: "A2" }
+
+    // Attach an Excel comment (note) to each dropdown header cell listing every
+    // allowed value, so users know exactly what they can choose from.
+    COLUMNS.forEach((col, idx) => {
+      if (!col.dropdown) return
+      const cellRef = `${COL_LETTERS[idx]}1`
+      if (!ws[cellRef]) ws[cellRef] = { t: "s", v: headerRow[idx] }
+      ws[cellRef].c = [
+        {
+          a: "Template",
+          t: `Select one of:\n• ${col.dropdown.join("\n• ")}`,
+        },
+      ]
+      ws[cellRef].c.hidden = true
+    })
 
     // Inject <dataValidations> XML directly — SheetJS writes ws["!xml"] verbatim
     // after </sheetData>, which is exactly where Excel expects dataValidations.
@@ -315,6 +332,19 @@ export default function GuardsPage() {
     ws["!xml"] = `<dataValidations count="${dvEntries.length}">${dvEntries.join("")}</dataValidations>`
 
     XLSX.utils.book_append_sheet(wb, ws, "Guards Import")
+
+    // Visible "Allowed Values" sheet — a human-readable guide listing every
+    // dropdown column and the exact values that can be selected.
+    const guideData: string[][] = [
+      ["Column", "Type", "Allowed Values (choose one)"],
+      ...dropdownCols.map((c) => [c.label, "Dropdown (Select)", c.dropdown!.join(", ")]),
+      ["Languages Spoken", "Multi (pipe-separated)", "e.g., English|Kinyarwanda|French"],
+      ["Special Skills", "Multi (pipe-separated)", "e.g., CPO (Close Protection Officer)|First Aid"],
+      ["Date Joined", "Date", "Format: YYYY-MM-DD (e.g., 2024-01-15)"],
+    ]
+    const guideWs = XLSX.utils.aoa_to_sheet(guideData)
+    guideWs["!cols"] = [{ wch: 26 }, { wch: 24 }, { wch: 80 }]
+    XLSX.utils.book_append_sheet(wb, guideWs, "Allowed Values")
 
     // Hide the Options sheet
     if (!wb.Workbook) wb.Workbook = { Sheets: [], Views: [] }
