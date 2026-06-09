@@ -63,7 +63,9 @@ type Incident = {
   reported_by: number | null
   incident_date: string
   status: string
+  reporter: string | null
   actions_taken: string | null
+  follow_up_recommendation: string | null
   attachment_url: string | null
   attachments: Attachment[] | null
   notified_parties: string[] | null
@@ -103,7 +105,9 @@ export default function IncidentsPage() {
     guard_id: "",
     incident_date: new Date().toISOString().slice(0, 16),
     status: "open",
+    reporter: "",
     actions_taken: "",
+    follow_up_recommendation: "",
     attachment_url: "",
     attachments: [] as Attachment[],
     notified_parties: [] as string[],
@@ -350,7 +354,9 @@ export default function IncidentsPage() {
       guard_id: "",
       incident_date: new Date().toISOString().slice(0, 16),
       status: "open",
+      reporter: "",
       actions_taken: "",
+      follow_up_recommendation: "",
       attachment_url: "",
       attachments: [],
       notified_parties: [],
@@ -369,7 +375,9 @@ export default function IncidentsPage() {
       guard_id: incident.guard_id?.toString() || "",
       incident_date: new Date(incident.incident_date).toISOString().slice(0, 16),
       status: incident.status,
+      reporter: incident.reporter || "",
       actions_taken: incident.actions_taken || "",
+      follow_up_recommendation: incident.follow_up_recommendation || "",
       attachment_url: incident.attachment_url || "",
       attachments: incident.attachments || [],
       notified_parties: incident.notified_parties || [],
@@ -703,6 +711,15 @@ export default function IncidentsPage() {
               )}
             </div>
             <div className="space-y-2">
+              <Label htmlFor="reporter">Reporter</Label>
+              <Input
+                id="reporter"
+                value={formData.reporter}
+                onChange={(e) => setFormData({ ...formData, reporter: e.target.value })}
+                placeholder="Name of the person reporting this incident"
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="description">Description *</Label>
               <Textarea
                 id="description"
@@ -719,6 +736,16 @@ export default function IncidentsPage() {
                 value={formData.actions_taken}
                 onChange={(e) => setFormData({ ...formData, actions_taken: e.target.value })}
                 placeholder="What actions have been taken?"
+                rows={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="follow_up_recommendation">Follow-up Recommendation</Label>
+              <Textarea
+                id="follow_up_recommendation"
+                value={formData.follow_up_recommendation}
+                onChange={(e) => setFormData({ ...formData, follow_up_recommendation: e.target.value })}
+                placeholder="Recommended follow-up actions"
                 rows={2}
               />
             </div>
@@ -887,6 +914,12 @@ export default function IncidentsPage() {
                 <div><span className="text-muted-foreground">Site:</span> {selectedIncident.site_name || "N/A"}</div>
                 <div><span className="text-muted-foreground">Guard:</span> {selectedIncident.guard_name || "N/A"}</div>
               </div>
+              {selectedIncident.reporter && (
+                <div>
+                  <h4 className="font-medium mb-1">Reporter</h4>
+                  <p className="text-sm text-muted-foreground">{selectedIncident.reporter}</p>
+                </div>
+              )}
               <div>
                 <h4 className="font-medium mb-1">Description</h4>
                 <p className="text-sm text-muted-foreground">{selectedIncident.description}</p>
@@ -895,6 +928,12 @@ export default function IncidentsPage() {
                 <div>
                   <h4 className="font-medium mb-1">Actions Taken</h4>
                   <p className="text-sm text-muted-foreground">{selectedIncident.actions_taken}</p>
+                </div>
+              )}
+              {selectedIncident.follow_up_recommendation && (
+                <div>
+                  <h4 className="font-medium mb-1">Follow-up Recommendation</h4>
+                  <p className="text-sm text-muted-foreground">{selectedIncident.follow_up_recommendation}</p>
                 </div>
               )}
               {selectedIncident.notified_parties && selectedIncident.notified_parties.length > 0 && (

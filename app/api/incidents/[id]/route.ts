@@ -30,7 +30,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params
     const body = await request.json()
-    const { title, description, incident_type, severity, site_id, guard_id, incident_date, status, actions_taken, attachment_url, attachments, notified_parties, resolution_notes } = body
+    const { title, description, incident_type, severity, site_id, guard_id, incident_date, status, reporter, actions_taken, follow_up_recommendation, attachment_url, attachments, notified_parties, resolution_notes } = body
 
     const result = await sql`
       UPDATE incidents 
@@ -42,7 +42,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
           guard_id = ${guard_id || null},
           incident_date = ${incident_date},
           status = ${status},
+          reporter = ${reporter || null},
           actions_taken = ${actions_taken || null},
+          follow_up_recommendation = ${follow_up_recommendation || null},
           attachment_url = ${attachment_url || null},
           attachments = ${attachments ? JSON.stringify(attachments) : null},
           notified_parties = ${notified_parties || null},

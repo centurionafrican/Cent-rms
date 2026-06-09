@@ -347,7 +347,7 @@ export function LeavesList({ initialLeaves, guards, currentUserId, currentUserRo
                     <SelectItem value="annual">Annual Leave</SelectItem>
                     <SelectItem value="sick">Sick Leave</SelectItem>
                     <SelectItem value="emergency">Emergency Leave</SelectItem>
-                    <SelectItem value="unpaid">Unpaid Leave</SelectItem>
+                    <SelectItem value="maternity">Maternity Leave</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

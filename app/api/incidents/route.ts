@@ -25,11 +25,11 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { title, description, incident_type, severity, site_id, guard_id, reported_by, incident_date, actions_taken, attachment_url, attachments, notified_parties } = body
+    const { title, description, incident_type, severity, site_id, guard_id, reported_by, incident_date, reporter, actions_taken, follow_up_recommendation, attachment_url, attachments, notified_parties } = body
 
     const result = await sql`
-      INSERT INTO incidents (title, description, incident_type, severity, site_id, guard_id, reported_by, incident_date, actions_taken, attachment_url, attachments, notified_parties)
-      VALUES (${title}, ${description}, ${incident_type}, ${severity}, ${site_id || null}, ${guard_id || null}, ${reported_by || null}, ${incident_date}, ${actions_taken || null}, ${attachment_url || null}, ${attachments ? JSON.stringify(attachments) : null}, ${notified_parties || null})
+      INSERT INTO incidents (title, description, incident_type, severity, site_id, guard_id, reported_by, incident_date, reporter, actions_taken, follow_up_recommendation, attachment_url, attachments, notified_parties)
+      VALUES (${title}, ${description}, ${incident_type}, ${severity}, ${site_id || null}, ${guard_id || null}, ${reported_by || null}, ${incident_date}, ${reporter || null}, ${actions_taken || null}, ${follow_up_recommendation || null}, ${attachment_url || null}, ${attachments ? JSON.stringify(attachments) : null}, ${notified_parties || null})
       RETURNING *
     `
     return NextResponse.json(result[0])
