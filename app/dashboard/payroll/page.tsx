@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Download, Search, Users, Calendar, FileSpreadsheet, Clock, Moon, CalendarDays, Timer } from "lucide-react"
+import { DollarSign, Download, Search, Users, Calendar, FileSpreadsheet, Printer } from "lucide-react"
 import { toast } from "sonner"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
@@ -19,12 +19,11 @@ interface PayrollEntry {
   first_name: string
   last_name: string
   guard_code: string | null
+  daily_rate: number
   phone: string | null
   days_worked: number
-  regular_hours: number
-  overtime_hours: number
-  night_shifts: number
-  holiday_days: number
+  days_absent: number
+  gross_pay: number
 }
 
 interface PayrollData {
@@ -35,10 +34,7 @@ interface PayrollData {
   summary: {
     totalGuards: number
     totalDaysWorked: number
-    totalRegularHours: number
-    totalOvertimeHours: number
-    totalNightShifts: number
-    totalHolidayDays: number
+    totalGrossPay: number
   }
 }
 
@@ -57,41 +53,27 @@ export default function PayrollPage() {
     `${p.first_name} ${p.last_name} ${p.guard_code || ""}`.toLowerCase().includes(search.toLowerCase())
   ) || []
 
+  function formatCurrency(amount: number) {
+    return new Intl.NumberFormat("en-RW", { style: "currency", currency: "RWF" }).format(amount)
+  }
+
   function downloadCSV() {
     if (!data) return
-
-    const headers = [
-      "Guard Code",
-      "Name",
-      "Phone",
-      "Days Worked",
-      "Regular Hours",
-      "Overtime Hours",
-      "Night Shifts",
-      "Holiday Days",
-    ]
+    
+    const headers = ["Guard Code", "Name", "Phone", "Daily Rate (RWF)", "Days Worked", "Days Absent", "Gross Pay (RWF)"]
     const rows = data.payroll.map((p) => [
       p.guard_code || "-",
       `${p.first_name} ${p.last_name}`,
       p.phone || "-",
+      p.daily_rate,
       p.days_worked,
-      p.regular_hours,
-      p.overtime_hours,
-      p.night_shifts,
-      p.holiday_days,
+      p.days_absent,
+      p.gross_pay,
     ])
-
+    
+    // Add summary row
     rows.push([])
-    rows.push([
-      "TOTAL",
-      "",
-      "",
-      data.summary.totalDaysWorked,
-      data.summary.totalRegularHours,
-      data.summary.totalOvertimeHours,
-      data.summary.totalNightShifts,
-      data.summary.totalHolidayDays,
-    ])
+    rows.push(["SUMMARY", "", "", "", data.summary.totalDaysWorked, "", data.summary.totalGrossPay])
 
     const csvContent = [headers, ...rows].map((row) => row.join(",")).join("\n")
     const blob = new Blob([csvContent], { type: "text/csv" })
@@ -106,7 +88,8 @@ export default function PayrollPage() {
 
   function downloadPDF() {
     if (!data) return
-
+    
+    // Create printable HTML content
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -114,6 +97,7 @@ export default function PayrollPage() {
         <title>Payroll Report - ${month}</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { color: #1e40af; text-align: center; }
           .header { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #1e40af; padding-bottom: 10px; }
           .company { font-size: 24px; font-weight: bold; color: #1e40af; }
           .period { color: #666; }
@@ -123,6 +107,7 @@ export default function PayrollPage() {
           tr:nth-child(even) { background: #f9f9f9; }
           .summary { margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px; }
           .summary-row { display: flex; justify-content: space-between; margin: 5px 0; }
+          .total { font-size: 18px; font-weight: bold; color: #1e40af; }
           @media print {
             body { padding: 0; }
             button { display: none; }
@@ -134,7 +119,7 @@ export default function PayrollPage() {
           <div class="company">CENTURION AFRICAN SECURITY SERVICES</div>
           <div class="period">Payroll Report: ${new Date(data.startDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
         </div>
-
+        
         <table>
           <thead>
             <tr>
@@ -142,11 +127,10 @@ export default function PayrollPage() {
               <th>Guard Code</th>
               <th>Name</th>
               <th>Phone</th>
+              <th>Daily Rate</th>
               <th>Days Worked</th>
-              <th>Regular Hours</th>
-              <th>Overtime Hours</th>
-              <th>Night Shifts</th>
-              <th>Holiday Days</th>
+              <th>Days Absent</th>
+              <th>Gross Pay</th>
             </tr>
           </thead>
           <tbody>
@@ -156,30 +140,35 @@ export default function PayrollPage() {
                 <td>${p.guard_code || "-"}</td>
                 <td>${p.first_name} ${p.last_name}</td>
                 <td>${p.phone || "-"}</td>
+                <td>${formatCurrency(p.daily_rate)}</td>
                 <td>${p.days_worked}</td>
-                <td>${p.regular_hours}</td>
-                <td>${p.overtime_hours}</td>
-                <td>${p.night_shifts}</td>
-                <td>${p.holiday_days}</td>
+                <td>${p.days_absent}</td>
+                <td>${formatCurrency(p.gross_pay)}</td>
               </tr>
             `).join("")}
           </tbody>
         </table>
-
+        
         <div class="summary">
-          <div class="summary-row"><span>Total Guards:</span><span>${data.summary.totalGuards}</span></div>
-          <div class="summary-row"><span>Total Days Worked:</span><span>${data.summary.totalDaysWorked}</span></div>
-          <div class="summary-row"><span>Total Regular Hours:</span><span>${data.summary.totalRegularHours}</span></div>
-          <div class="summary-row"><span>Total Overtime Hours:</span><span>${data.summary.totalOvertimeHours}</span></div>
-          <div class="summary-row"><span>Total Night Shifts:</span><span>${data.summary.totalNightShifts}</span></div>
-          <div class="summary-row"><span>Total Holiday Days:</span><span>${data.summary.totalHolidayDays}</span></div>
+          <div class="summary-row">
+            <span>Total Guards:</span>
+            <span>${data.summary.totalGuards}</span>
+          </div>
+          <div class="summary-row">
+            <span>Total Days Worked:</span>
+            <span>${data.summary.totalDaysWorked}</span>
+          </div>
+          <div class="summary-row total">
+            <span>TOTAL GROSS PAY:</span>
+            <span>${formatCurrency(data.summary.totalGrossPay)}</span>
+          </div>
         </div>
-
+        
         <script>window.print();</script>
       </body>
       </html>
     `
-
+    
     const printWindow = window.open("", "_blank")
     if (printWindow) {
       printWindow.document.write(printContent)
@@ -193,7 +182,7 @@ export default function PayrollPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Payroll Management</h1>
           <p className="text-muted-foreground">
-            Track worked hours, overtime, night shifts and holidays based on attendance
+            Calculate and manage guard payroll based on days worked
           </p>
         </div>
         <div className="flex gap-2">
@@ -209,10 +198,10 @@ export default function PayrollPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Guards</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Guards</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -221,7 +210,7 @@ export default function PayrollPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Days Worked</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Days Worked</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -230,47 +219,33 @@ export default function PayrollPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Regular Hours</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Gross Pay</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.summary.totalRegularHours || 0}</div>
+            <div className="text-2xl font-bold text-primary">
+              {formatCurrency(data?.summary.totalGrossPay || 0)}
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overtime Hours</CardTitle>
-            <Timer className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Period</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">{data?.summary.totalOvertimeHours || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Night Shifts</CardTitle>
-            <Moon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-indigo-600">{data?.summary.totalNightShifts || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Holiday Days</CardTitle>
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{data?.summary.totalHolidayDays || 0}</div>
+            <div className="text-lg font-semibold">
+              {data ? new Date(data.startDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "-"}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters & Table */}
+      {/* Filters */}
       <Card>
         <CardHeader>
           <CardTitle>Payroll Report</CardTitle>
-          <CardDescription>Select a month to view worked hours and allowances</CardDescription>
+          <CardDescription>Select a month to view and download payroll data</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4 md:flex-row md:items-center mb-4">
@@ -307,24 +282,23 @@ export default function PayrollPage() {
                     <TableHead>Guard Code</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Phone</TableHead>
+                    <TableHead className="text-right">Daily Rate</TableHead>
                     <TableHead className="text-center">Days Worked</TableHead>
-                    <TableHead className="text-center">Regular Hours</TableHead>
-                    <TableHead className="text-center">Overtime Hours</TableHead>
-                    <TableHead className="text-center">Night Shifts</TableHead>
-                    <TableHead className="text-center">Holiday Days</TableHead>
+                    <TableHead className="text-center">Days Absent</TableHead>
+                    <TableHead className="text-right">Gross Pay</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         No payroll data found
                       </TableCell>
                     </TableRow>
                   ) : (
                     filtered.map((p, idx) => (
-                      <TableRow
-                        key={p.guard_id}
+                      <TableRow 
+                        key={p.guard_id} 
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => setSelectedGuard(p)}
                       >
@@ -332,38 +306,19 @@ export default function PayrollPage() {
                         <TableCell className="font-mono font-semibold">{p.guard_code || "-"}</TableCell>
                         <TableCell className="font-medium">{p.first_name} {p.last_name}</TableCell>
                         <TableCell>{p.phone || "-"}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(p.daily_rate)}</TableCell>
                         <TableCell className="text-center">
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                             {p.days_worked}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-center">{p.regular_hours}</TableCell>
                         <TableCell className="text-center">
-                          {Number(p.overtime_hours) > 0 ? (
-                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                              {p.overtime_hours}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">0</span>
-                          )}
+                          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                            {p.days_absent}
+                          </Badge>
                         </TableCell>
-                        <TableCell className="text-center">
-                          {Number(p.night_shifts) > 0 ? (
-                            <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
-                              {p.night_shifts}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">0</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {Number(p.holiday_days) > 0 ? (
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                              {p.holiday_days}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">0</span>
-                          )}
+                        <TableCell className="text-right font-semibold text-primary">
+                          {formatCurrency(p.gross_pay)}
                         </TableCell>
                       </TableRow>
                     ))
@@ -394,28 +349,28 @@ export default function PayrollPage() {
                   <p className="text-sm text-muted-foreground">{selectedGuard.guard_code || "No code"}</p>
                 </div>
               </div>
-
+              
               <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <p className="text-sm text-muted-foreground">Daily Rate</p>
+                  <p className="text-lg font-semibold">{formatCurrency(selectedGuard.daily_rate)}</p>
+                </div>
                 <div className="p-3 bg-muted/30 rounded-lg">
                   <p className="text-sm text-muted-foreground">Days Worked</p>
                   <p className="text-lg font-semibold text-green-600">{selectedGuard.days_worked}</p>
                 </div>
                 <div className="p-3 bg-muted/30 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Regular Hours</p>
-                  <p className="text-lg font-semibold">{selectedGuard.regular_hours}</p>
+                  <p className="text-sm text-muted-foreground">Days Absent</p>
+                  <p className="text-lg font-semibold text-red-600">{selectedGuard.days_absent}</p>
                 </div>
-                <div className="p-3 bg-muted/30 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Overtime Hours</p>
-                  <p className="text-lg font-semibold text-amber-600">{selectedGuard.overtime_hours}</p>
+                <div className="p-3 bg-primary/10 rounded-lg">
+                  <p className="text-sm text-muted-foreground">Gross Pay</p>
+                  <p className="text-lg font-bold text-primary">{formatCurrency(selectedGuard.gross_pay)}</p>
                 </div>
-                <div className="p-3 bg-muted/30 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Night Shifts</p>
-                  <p className="text-lg font-semibold text-indigo-600">{selectedGuard.night_shifts}</p>
-                </div>
-                <div className="p-3 bg-muted/30 rounded-lg col-span-2">
-                  <p className="text-sm text-muted-foreground">Holiday Days (weekends/holidays worked)</p>
-                  <p className="text-lg font-semibold text-blue-600">{selectedGuard.holiday_days}</p>
-                </div>
+              </div>
+              
+              <div className="text-sm text-muted-foreground border-t pt-4">
+                Calculation: {formatCurrency(selectedGuard.daily_rate)} x {selectedGuard.days_worked} days = {formatCurrency(selectedGuard.gross_pay)}
               </div>
             </div>
           )}
