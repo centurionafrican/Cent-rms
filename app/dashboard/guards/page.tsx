@@ -262,8 +262,18 @@ export default function GuardsPage() {
         dropdown: ["Excellent", "Very Good", "Good", "Needs Improvement", "Under Review"] },
       { key: "maternity_status",  label: "Maternity Status",               example: "Not Applicable",
         dropdown: ["Not Applicable", "Not Pregnant", "Pregnant", "On Maternity Leave", "Returned from Maternity Leave"] },
-      { key: "languages_spoken",  label: "Languages Spoken (pipe-sep.)",   example: "English|Kinyarwanda" },
-      { key: "special_skills",    label: "Special Skills (pipe-sep.)",     example: "CPO (Close Protection Officer)" },
+      { key: "language_1",        label: "Language 1",                     example: "English",
+        dropdown: ["English", "French", "Kiswahili", "Kinyarwanda"] },
+      { key: "language_2",        label: "Language 2",                     example: "Kinyarwanda",
+        dropdown: ["English", "French", "Kiswahili", "Kinyarwanda"] },
+      { key: "language_3",        label: "Language 3",                     example: "",
+        dropdown: ["English", "French", "Kiswahili", "Kinyarwanda"] },
+      { key: "language_4",        label: "Language 4",                     example: "",
+        dropdown: ["English", "French", "Kiswahili", "Kinyarwanda"] },
+      { key: "skill_1",           label: "Skill 1",                        example: "CPO (Close Protection Officer)",
+        dropdown: ["CPO (Close Protection Officer)", "Control Room Operations"] },
+      { key: "skill_2",           label: "Skill 2",                        example: "",
+        dropdown: ["CPO (Close Protection Officer)", "Control Room Operations"] },
       { key: "annual_leave_days", label: "Annual Leave Days",              example: "21" },
     ]
 
@@ -343,8 +353,8 @@ export default function GuardsPage() {
     ]
     guideWs.getRow(1).font = { bold: true }
     dropdownCols.forEach((c) => guideWs.addRow({ c: c.label, t: "Dropdown (Select)", v: c.dropdown!.join(", ") }))
-    guideWs.addRow({ c: "Languages Spoken", t: "Multi (pipe-separated)", v: "e.g., English|Kinyarwanda|French" })
-    guideWs.addRow({ c: "Special Skills", t: "Multi (pipe-separated)", v: "e.g., CPO (Close Protection Officer)|First Aid" })
+    guideWs.addRow({ c: "Language 1–4", t: "Dropdown (Select)", v: "Pick a language in each column to record multiple languages" })
+    guideWs.addRow({ c: "Skill 1–2", t: "Dropdown (Select)", v: "Pick a skill in each column to record multiple skills" })
     guideWs.addRow({ c: "Date Joined", t: "Date", v: "Format: YYYY-MM-DD (e.g., 2024-01-15)" })
 
     // ── Write and trigger browser download ───────────────────────────────────
@@ -799,8 +809,8 @@ export default function GuardsPage() {
             </div>
             <div className="text-xs text-muted-foreground space-y-1 bg-muted/40 rounded p-3">
               <p className="font-medium">Required columns: <code>first_name</code>, <code>last_name</code></p>
-              <p>All other columns match the Add Guard form: email, phone, id_number, date_joined, bank_name, account_number, title, guard_title, gender, education_level, discipline, languages_spoken, special_skills, maternity_status, status, annual_leave_days</p>
-              <p className="text-amber-700">For multi-value fields (languages_spoken, special_skills) separate values with a pipe: <code>English|Kinyarwanda</code></p>
+              <p>All other columns match the Add Guard form: email, phone, id_number, date_joined, bank_name, account_number, title, guard_title, gender, education_level, discipline, maternity_status, status, annual_leave_days</p>
+              <p className="text-amber-700">For multiple languages or skills, pick a value from the dropdown in each numbered column (Language 1–4, Skill 1–2).</p>
             </div>
             {importResult && (
               <div className="space-y-2">

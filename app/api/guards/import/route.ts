@@ -117,13 +117,25 @@ export async function POST(request: Request) {
 
       const annual_leave_days = Number.parseInt(row["annual_leave_days"] || "21") || 21
 
-const languages_spoken = row["languages_spoken"]
-  ? row["languages_spoken"].split("|").map((v) => v.trim()).filter(Boolean)
-  : []
+// Languages: support split columns (language_1..language_4) AND legacy pipe-separated
+const languagesFromColumns = ["language_1", "language_2", "language_3", "language_4"]
+  .map((k) => (row[k] || "").trim())
+  .filter(Boolean)
+const languages_spoken = languagesFromColumns.length
+  ? Array.from(new Set(languagesFromColumns))
+  : row["languages_spoken"]
+    ? Array.from(new Set(row["languages_spoken"].split("|").map((v) => v.trim()).filter(Boolean)))
+    : []
 
-const special_skills = row["special_skills"]
-  ? row["special_skills"].split("|").map((v) => v.trim()).filter(Boolean)
-  : []
+// Skills: support split columns (skill_1, skill_2) AND legacy pipe-separated
+const skillsFromColumns = ["skill_1", "skill_2"]
+  .map((k) => (row[k] || "").trim())
+  .filter(Boolean)
+const special_skills = skillsFromColumns.length
+  ? Array.from(new Set(skillsFromColumns))
+  : row["special_skills"]
+    ? Array.from(new Set(row["special_skills"].split("|").map((v) => v.trim()).filter(Boolean)))
+    : []
 
       try {
         await sql`
