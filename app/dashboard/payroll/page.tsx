@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { DollarSign, Download, Search, Users, Calendar, FileSpreadsheet, Printer } from "lucide-react"
+import { Download, Search, Users, Calendar, FileSpreadsheet } from "lucide-react"
 import { toast } from "sonner"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
@@ -19,11 +18,11 @@ interface PayrollEntry {
   first_name: string
   last_name: string
   guard_code: string | null
-  daily_rate: number
-  phone: string | null
-  days_worked: number
-  days_absent: number
-  gross_pay: number
+  bank_name: string | null
+  account_number: string | null
+  designation: string | null
+  location: string | null
+  working_days: number
 }
 
 interface PayrollData {
@@ -33,8 +32,7 @@ interface PayrollData {
   payroll: PayrollEntry[]
   summary: {
     totalGuards: number
-    totalDaysWorked: number
-    totalGrossPay: number
+    totalWorkingDays: number
   }
 }
 
@@ -42,7 +40,6 @@ export default function PayrollPage() {
   const currentMonth = new Date().toISOString().slice(0, 7)
   const [month, setMonth] = useState(currentMonth)
   const [search, setSearch] = useState("")
-  const [selectedGuard, setSelectedGuard] = useState<PayrollEntry | null>(null)
 
   const { data, isLoading, error } = useSWR<PayrollData>(
     `/api/payroll?month=${month}`,
@@ -50,32 +47,30 @@ export default function PayrollPage() {
   )
 
   const filtered = data?.payroll.filter((p) =>
-    `${p.first_name} ${p.last_name} ${p.guard_code || ""}`.toLowerCase().includes(search.toLowerCase())
+    `${p.first_name} ${p.last_name} ${p.guard_code || ""} ${p.bank_name || ""} ${p.location || ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
   ) || []
-
-  function formatCurrency(amount: number) {
-    return new Intl.NumberFormat("en-RW", { style: "currency", currency: "RWF" }).format(amount)
-  }
 
   function downloadCSV() {
     if (!data) return
-    
-    const headers = ["Guard Code", "Name", "Phone", "Daily Rate (RWF)", "Days Worked", "Days Absent", "Gross Pay (RWF)"]
-    const rows = data.payroll.map((p) => [
-      p.guard_code || "-",
-      `${p.first_name} ${p.last_name}`,
-      p.phone || "-",
-      p.daily_rate,
-      p.days_worked,
-      p.days_absent,
-      p.gross_pay,
-    ])
-    
-    // Add summary row
-    rows.push([])
-    rows.push(["SUMMARY", "", "", "", data.summary.totalDaysWorked, "", data.summary.totalGrossPay])
 
-    const csvContent = [headers, ...rows].map((row) => row.join(",")).join("\n")
+    const headers = ["BANK Name", "A/C", "FULL NAMES", "DESIGNATION", "LOCATION", "WORKING DAYS"]
+    const rows = data.payroll.map((p) => [
+      p.bank_name || "-",
+      p.account_number || "-",
+      `${p.first_name} ${p.last_name}`,
+      p.designation || "-",
+      p.location || "-",
+      p.working_days,
+    ])
+
+    rows.push([])
+    rows.push(["", "", "TOTAL", "", "", data.summary.totalWorkingDays])
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((c) => `"${String(c ?? "")}"`).join(","))
+      .join("\n")
     const blob = new Blob([csvContent], { type: "text/csv" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
@@ -88,8 +83,7 @@ export default function PayrollPage() {
 
   function downloadPDF() {
     if (!data) return
-    
-    // Create printable HTML content
+
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -97,9 +91,8 @@ export default function PayrollPage() {
         <title>Payroll Report - ${month}</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 20px; }
-          h1 { color: #1e40af; text-align: center; }
           .header { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #1e40af; padding-bottom: 10px; }
-          .company { font-size: 24px; font-weight: bold; color: #1e40af; }
+          .company { font-size: 22px; font-weight: bold; color: #1e40af; }
           .period { color: #666; }
           table { width: 100%; border-collapse: collapse; margin-top: 20px; }
           th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -107,68 +100,49 @@ export default function PayrollPage() {
           tr:nth-child(even) { background: #f9f9f9; }
           .summary { margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px; }
           .summary-row { display: flex; justify-content: space-between; margin: 5px 0; }
-          .total { font-size: 18px; font-weight: bold; color: #1e40af; }
-          @media print {
-            body { padding: 0; }
-            button { display: none; }
-          }
+          @media print { body { padding: 0; } button { display: none; } }
         </style>
       </head>
       <body>
         <div class="header">
           <div class="company">CENTURION AFRICAN SECURITY SERVICES</div>
-          <div class="period">Payroll Report: ${new Date(data.startDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
+          <div class="period">Payroll: ${new Date(data.startDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
         </div>
-        
         <table>
           <thead>
             <tr>
               <th>#</th>
-              <th>Guard Code</th>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Daily Rate</th>
-              <th>Days Worked</th>
-              <th>Days Absent</th>
-              <th>Gross Pay</th>
+              <th>BANK Name</th>
+              <th>A/C</th>
+              <th>FULL NAMES</th>
+              <th>DESIGNATION</th>
+              <th>LOCATION</th>
+              <th>WORKING DAYS</th>
             </tr>
           </thead>
           <tbody>
             ${data.payroll.map((p, i) => `
               <tr>
                 <td>${i + 1}</td>
-                <td>${p.guard_code || "-"}</td>
+                <td>${p.bank_name || "-"}</td>
+                <td>${p.account_number || "-"}</td>
                 <td>${p.first_name} ${p.last_name}</td>
-                <td>${p.phone || "-"}</td>
-                <td>${formatCurrency(p.daily_rate)}</td>
-                <td>${p.days_worked}</td>
-                <td>${p.days_absent}</td>
-                <td>${formatCurrency(p.gross_pay)}</td>
+                <td>${p.designation || "-"}</td>
+                <td>${p.location || "-"}</td>
+                <td>${p.working_days}</td>
               </tr>
             `).join("")}
           </tbody>
         </table>
-        
         <div class="summary">
-          <div class="summary-row">
-            <span>Total Guards:</span>
-            <span>${data.summary.totalGuards}</span>
-          </div>
-          <div class="summary-row">
-            <span>Total Days Worked:</span>
-            <span>${data.summary.totalDaysWorked}</span>
-          </div>
-          <div class="summary-row total">
-            <span>TOTAL GROSS PAY:</span>
-            <span>${formatCurrency(data.summary.totalGrossPay)}</span>
-          </div>
+          <div class="summary-row"><span>Total Guards:</span><span>${data.summary.totalGuards}</span></div>
+          <div class="summary-row"><span>Total Working Days:</span><span>${data.summary.totalWorkingDays}</span></div>
         </div>
-        
         <script>window.print();</script>
       </body>
       </html>
     `
-    
+
     const printWindow = window.open("", "_blank")
     if (printWindow) {
       printWindow.document.write(printContent)
@@ -182,7 +156,7 @@ export default function PayrollPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Payroll Management</h1>
           <p className="text-muted-foreground">
-            Calculate and manage guard payroll based on days worked
+            Worked days per guard based on attendance, with banking and posting details
           </p>
         </div>
         <div className="flex gap-2">
@@ -198,10 +172,10 @@ export default function PayrollPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Guards</CardTitle>
+            <CardTitle className="text-sm font-medium">Guards</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -210,42 +184,20 @@ export default function PayrollPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Days Worked</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Working Days</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.summary.totalDaysWorked || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Gross Pay</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              {formatCurrency(data?.summary.totalGrossPay || 0)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Period</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-semibold">
-              {data ? new Date(data.startDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "-"}
-            </div>
+            <div className="text-2xl font-bold">{data?.summary.totalWorkingDays || 0}</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Filters & Table */}
       <Card>
         <CardHeader>
           <CardTitle>Payroll Report</CardTitle>
-          <CardDescription>Select a month to view and download payroll data</CardDescription>
+          <CardDescription>Select a month to view working days per guard</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4 md:flex-row md:items-center mb-4">
@@ -261,7 +213,7 @@ export default function PayrollPage() {
             <div className="flex-1 flex items-center gap-2">
               <Search className="h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search guards..."
+                placeholder="Search by name, bank, location..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="max-w-sm"
@@ -279,46 +231,34 @@ export default function PayrollPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">#</TableHead>
-                    <TableHead>Guard Code</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead className="text-right">Daily Rate</TableHead>
-                    <TableHead className="text-center">Days Worked</TableHead>
-                    <TableHead className="text-center">Days Absent</TableHead>
-                    <TableHead className="text-right">Gross Pay</TableHead>
+                    <TableHead>BANK Name</TableHead>
+                    <TableHead>A/C</TableHead>
+                    <TableHead>FULL NAMES</TableHead>
+                    <TableHead>DESIGNATION</TableHead>
+                    <TableHead>LOCATION</TableHead>
+                    <TableHead className="text-center">WORKING DAYS</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         No payroll data found
                       </TableCell>
                     </TableRow>
                   ) : (
                     filtered.map((p, idx) => (
-                      <TableRow 
-                        key={p.guard_id} 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => setSelectedGuard(p)}
-                      >
+                      <TableRow key={p.guard_id}>
                         <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
-                        <TableCell className="font-mono font-semibold">{p.guard_code || "-"}</TableCell>
+                        <TableCell>{p.bank_name || <span className="text-muted-foreground">-</span>}</TableCell>
+                        <TableCell className="font-mono">{p.account_number || <span className="text-muted-foreground">-</span>}</TableCell>
                         <TableCell className="font-medium">{p.first_name} {p.last_name}</TableCell>
-                        <TableCell>{p.phone || "-"}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(p.daily_rate)}</TableCell>
+                        <TableCell>{p.designation || <span className="text-muted-foreground">-</span>}</TableCell>
+                        <TableCell>{p.location || <span className="text-muted-foreground">-</span>}</TableCell>
                         <TableCell className="text-center">
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                            {p.days_worked}
+                            {p.working_days}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                            {p.days_absent}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-primary">
-                          {formatCurrency(p.gross_pay)}
                         </TableCell>
                       </TableRow>
                     ))
@@ -329,56 +269,6 @@ export default function PayrollPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Guard Detail Dialog */}
-      <Dialog open={!!selectedGuard} onOpenChange={() => setSelectedGuard(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Payroll Details</DialogTitle>
-          </DialogHeader>
-          {selectedGuard && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-bold text-primary">
-                    {selectedGuard.first_name[0]}{selectedGuard.last_name[0]}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">{selectedGuard.first_name} {selectedGuard.last_name}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedGuard.guard_code || "No code"}</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-muted/30 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Daily Rate</p>
-                  <p className="text-lg font-semibold">{formatCurrency(selectedGuard.daily_rate)}</p>
-                </div>
-                <div className="p-3 bg-muted/30 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Days Worked</p>
-                  <p className="text-lg font-semibold text-green-600">{selectedGuard.days_worked}</p>
-                </div>
-                <div className="p-3 bg-muted/30 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Days Absent</p>
-                  <p className="text-lg font-semibold text-red-600">{selectedGuard.days_absent}</p>
-                </div>
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Gross Pay</p>
-                  <p className="text-lg font-bold text-primary">{formatCurrency(selectedGuard.gross_pay)}</p>
-                </div>
-              </div>
-              
-              <div className="text-sm text-muted-foreground border-t pt-4">
-                Calculation: {formatCurrency(selectedGuard.daily_rate)} x {selectedGuard.days_worked} days = {formatCurrency(selectedGuard.gross_pay)}
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedGuard(null)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

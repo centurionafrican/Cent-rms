@@ -102,6 +102,8 @@ export async function POST(request: Request) {
       const education_level = row["education_level"] || null
       const discipline = row["discipline"] || "Excellent"
       const maternity_status = row["maternity_status"] || "Not Applicable"
+      const bank_name = row["bank_name"] || null
+      const account_number = row["account_number"] || null
             
       // Convert Excel serial date to ISO date string if needed
       let date_joined = row["date_joined"] || new Date().toISOString().split("T")[0]
@@ -129,13 +131,13 @@ const special_skills = row["special_skills"]
             first_name, last_name, email, phone, title, guard_title, status,
             id_number, annual_leave_days, date_joined, hire_date,
             gender, education_level, discipline, maternity_status,
-            languages_spoken, special_skills
+            languages_spoken, special_skills, bank_name, account_number
           )
           VALUES (
             ${first_name}, ${last_name}, ${email}, ${phone}, ${title}, ${guard_title}, ${status},
             ${id_number}, ${annual_leave_days}, ${date_joined}, ${date_joined},
             ${gender}, ${education_level}, ${discipline}, ${maternity_status},
-            ${languages_spoken}, ${special_skills}
+            ${languages_spoken}, ${special_skills}, ${bank_name}, ${account_number}
           )
           ON CONFLICT (id_number) DO NOTHING
         `
