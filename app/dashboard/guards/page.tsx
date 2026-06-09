@@ -234,8 +234,9 @@ export default function GuardsPage() {
   }
 
   async function downloadTemplate() {
-    // xlsx exports as a namespace — use * as, never { default: ... }
-    const XLSX = await import("xlsx").then((m) => m.default ?? m)
+    // exceljs gives us real per-cell data validation (dropdowns), which the
+    // community SheetJS build cannot write.
+    const ExcelJS = await import("exceljs").then((m) => m.default ?? m)
 
     // ── Column definitions ─────────────────────────────────────────────────
     const COLUMNS: { key: string; label: string; example: string; dropdown?: string[] }[] = [
@@ -266,95 +267,88 @@ export default function GuardsPage() {
       { key: "annual_leave_days", label: "Annual Leave Days",              example: "21" },
     ]
 
-    const ROW_COUNT = 500
-    const COL_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
-
-    // ── Build workbook ─────────────────────────────────────────────────────
-    const wb = XLSX.utils.book_new()
-
-    // Hidden Options sheet — each dropdown col gets its own column
-    const dropdownCols = COLUMNS.filter((c) => c.dropdown)
-    const maxOptRows = Math.max(...dropdownCols.map((c) => c.dropdown!.length))
-    const optData: string[][] = []
-    for (let r = 0; r < maxOptRows; r++) {
-      optData.push(dropdownCols.map((c) => c.dropdown![r] ?? ""))
+    const ROW_COUNT = 700          // data rows that get a dropdown
+    const FIRST_DATA_ROW = 3       // row 1 = header, row 2 = example, rows 3+ = entry
+    const LAST_DATA_ROW = FIRST_DATA_ROW + ROW_COUNT - 1
+    const colLetter = (i: number) => {
+      let s = ""; let n = i + 1
+      while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26) }
+      return s
     }
-    const optWs = XLSX.utils.aoa_to_sheet(optData)
-    optWs["!cols"] = dropdownCols.map((c) => ({ wch: Math.max(...c.dropdown!.map((v) => v.length)) + 2 }))
-    XLSX.utils.book_append_sheet(wb, optWs, "Options")
 
-    // Main import sheet — row 1 header, row 2 example, rows 3-500 blank
-    // Dropdown columns get a "⮟ Select" marker in the header so users can see
-    // at a glance which cells offer a pick-list in Excel.
-    const headerRow  = COLUMNS.map((c) => (c.dropdown ? `${c.label} ⮟ (Select)` : c.label))
-    const exampleRow = COLUMNS.map((c) => c.example)
-    const blankRows: string[][] = Array.from({ length: ROW_COUNT - 1 }, () => Array(COLUMNS.length).fill(""))
-    const ws = XLSX.utils.aoa_to_sheet([headerRow, exampleRow, ...blankRows])
-    ws["!cols"]   = COLUMNS.map((c) => ({ wch: Math.max((c.dropdown ? c.label.length + 12 : c.label.length), c.example.length, 20) + 2 }))
-    ws["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", activeCell: "A2", sqref: "A2" }
+    const wb = new ExcelJS.Workbook()
 
-    // Attach an Excel comment (note) to each dropdown header cell listing every
-    // allowed value, so users know exactly what they can choose from.
-    COLUMNS.forEach((col, idx) => {
-      if (!col.dropdown) return
-      const cellRef = `${COL_LETTERS[idx]}1`
-      if (!ws[cellRef]) ws[cellRef] = { t: "s", v: headerRow[idx] }
-      ws[cellRef].c = [
-        {
-          a: "Template",
-          t: `Select one of:\n• ${col.dropdown.join("\n• ")}`,
-        },
-      ]
-      ws[cellRef].c.hidden = true
+    // ── Hidden Options sheet: one column per dropdown field ──────────────────
+    const dropdownCols = COLUMNS.filter((c) => c.dropdown)
+    const optWs = wb.addWorksheet("Options")
+    dropdownCols.forEach((col, ci) => {
+      optWs.getColumn(ci + 1).values = [col.key, ...col.dropdown!]
+      optWs.getColumn(ci + 1).width = Math.max(...col.dropdown!.map((v) => v.length)) + 2
+    })
+    optWs.state = "veryHidden"
+
+    // ── Main import sheet ────────────────────────────────────────────────────
+    const ws = wb.addWorksheet("Guards Import", { views: [{ state: "frozen", ySplit: 2 }] })
+
+    // Header row (row 1) — dropdown columns get a "⮟ Select" marker
+    const headerRow = ws.getRow(1)
+    COLUMNS.forEach((col, ci) => {
+      const cell = headerRow.getCell(ci + 1)
+      cell.value = col.dropdown ? `${col.label} ⮟ (Select)` : col.label
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } }
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: col.dropdown ? "FF1D4ED8" : "FF374151" } }
+      cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true }
+      ws.getColumn(ci + 1).width = Math.max(col.label.length + (col.dropdown ? 12 : 2), col.example.length, 16)
+      if (col.dropdown) {
+        cell.note = `Select one of:\n${col.dropdown.map((v) => `• ${v}`).join("\n")}`
+      }
+    })
+    headerRow.height = 28
+
+    // Example row (row 2) — greyed-out sample, clearly marked
+    const exampleRow = ws.getRow(2)
+    COLUMNS.forEach((col, ci) => {
+      const cell = exampleRow.getCell(ci + 1)
+      cell.value = col.example
+      cell.font = { italic: true, color: { argb: "FF9CA3AF" } }
     })
 
-    // Inject <dataValidations> XML directly — SheetJS writes ws["!xml"] verbatim
-    // after </sheetData>, which is exactly where Excel expects dataValidations.
-    const dvEntries = dropdownCols.map((col) => {
+    // Per-cell data validation: every entry row in every dropdown column gets a
+    // real Excel dropdown that references the hidden Options sheet.
+    dropdownCols.forEach((col) => {
       const mainIdx = COLUMNS.findIndex((c) => c.key === col.key)
-      const optIdx  = dropdownCols.findIndex((c) => c.key === col.key)
-      const mainCol = COL_LETTERS[mainIdx]
-      const optCol  = COL_LETTERS[optIdx]
-      const count   = col.dropdown!.length
-      const sqref   = `${mainCol}2:${mainCol}${ROW_COUNT + 1}`
-      // formula1 references the hidden Options sheet
-      const f1 = `Options!$${optCol}$1:$${optCol}$${count}`
-      return (
-        `<dataValidation type="list" allowBlank="1" showDropDown="0" ` +
-        `showErrorMessage="1" errorStyle="stop" ` +
-        `errorTitle="Invalid value" ` +
-        `error="Please select a value from the dropdown list." ` +
-        `sqref="${sqref}">` +
-        `<formula1>${f1}</formula1>` +
-        `</dataValidation>`
-      )
+      const optIdx = dropdownCols.findIndex((c) => c.key === col.key)
+      const optCol = colLetter(optIdx)
+      const count = col.dropdown!.length
+      const formula = `Options!$${optCol}$2:$${optCol}$${count + 1}`
+      for (let r = FIRST_DATA_ROW; r <= LAST_DATA_ROW; r++) {
+        ws.getCell(`${colLetter(mainIdx)}${r}`).dataValidation = {
+          type: "list",
+          allowBlank: true,
+          formulae: [formula],
+          showErrorMessage: true,
+          errorStyle: "stop",
+          errorTitle: "Invalid value",
+          error: "Please pick a value from the dropdown list.",
+        }
+      }
     })
-    ws["!xml"] = `<dataValidations count="${dvEntries.length}">${dvEntries.join("")}</dataValidations>`
 
-    XLSX.utils.book_append_sheet(wb, ws, "Guards Import")
-
-    // Visible "Allowed Values" sheet — a human-readable guide listing every
-    // dropdown column and the exact values that can be selected.
-    const guideData: string[][] = [
-      ["Column", "Type", "Allowed Values (choose one)"],
-      ...dropdownCols.map((c) => [c.label, "Dropdown (Select)", c.dropdown!.join(", ")]),
-      ["Languages Spoken", "Multi (pipe-separated)", "e.g., English|Kinyarwanda|French"],
-      ["Special Skills", "Multi (pipe-separated)", "e.g., CPO (Close Protection Officer)|First Aid"],
-      ["Date Joined", "Date", "Format: YYYY-MM-DD (e.g., 2024-01-15)"],
+    // ── Visible "Allowed Values" guide sheet ─────────────────────────────────
+    const guideWs = wb.addWorksheet("Allowed Values")
+    guideWs.columns = [
+      { header: "Column", key: "c", width: 28 },
+      { header: "Type", key: "t", width: 24 },
+      { header: "Allowed Values (choose one)", key: "v", width: 80 },
     ]
-    const guideWs = XLSX.utils.aoa_to_sheet(guideData)
-    guideWs["!cols"] = [{ wch: 26 }, { wch: 24 }, { wch: 80 }]
-    XLSX.utils.book_append_sheet(wb, guideWs, "Allowed Values")
+    guideWs.getRow(1).font = { bold: true }
+    dropdownCols.forEach((c) => guideWs.addRow({ c: c.label, t: "Dropdown (Select)", v: c.dropdown!.join(", ") }))
+    guideWs.addRow({ c: "Languages Spoken", t: "Multi (pipe-separated)", v: "e.g., English|Kinyarwanda|French" })
+    guideWs.addRow({ c: "Special Skills", t: "Multi (pipe-separated)", v: "e.g., CPO (Close Protection Officer)|First Aid" })
+    guideWs.addRow({ c: "Date Joined", t: "Date", v: "Format: YYYY-MM-DD (e.g., 2024-01-15)" })
 
-    // Hide the Options sheet
-    if (!wb.Workbook) wb.Workbook = { Sheets: [], Views: [] }
-    wb.Workbook.Sheets = wb.SheetNames.map((name) => ({
-      name,
-      Hidden: name === "Options" ? 1 : 0,
-    }))
-
-    // Write and trigger browser download
-    const buf  = XLSX.write(wb, { bookType: "xlsx", type: "array" }) as ArrayBuffer
+    // ── Write and trigger browser download ───────────────────────────────────
+    const buf = await wb.xlsx.writeBuffer()
     const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement("a")
