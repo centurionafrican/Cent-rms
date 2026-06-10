@@ -228,6 +228,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
   const [weekLoading, setWeekLoading] = useState(false)
   const [selectedSitePosts, setSelectedSitePosts] = useState<Post[]>([])
   const [selectedPostId, setSelectedPostId] = useState("")
+  const [bulkSitePosts, setBulkSitePosts] = useState<Post[]>([])
 
   const weekDates = getWeekDates(weekStart)
 
@@ -699,6 +700,21 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
     }
   }
 
+  async function handleBulkSiteSelection(siteId: string) {
+    setBulkData((prev) => ({ ...prev, site_id: siteId, position: "" }))
+    // Fetch posts for this site so the position dropdown reflects the chosen site
+    try {
+      const res = await fetch(`/api/sites/${siteId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setBulkSitePosts(data.posts || [])
+      }
+    } catch (e) {
+      console.error("Error fetching site posts:", e)
+      setBulkSitePosts([])
+    }
+  }
+
   async function handleRotation() {
     setRotationLoading(true)
     try {
@@ -1060,7 +1076,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                       <Label>Site *</Label>
                       <Select
                         value={bulkData.site_id || ""}
-                        onValueChange={(v) => setBulkData({ ...bulkData, site_id: v })}
+                        onValueChange={handleBulkSiteSelection}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select site" />
@@ -1130,11 +1146,22 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                         <SelectTrigger><SelectValue placeholder="Select position..." /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">Not specified</SelectItem>
-                          <SelectItem value="Gate">Gate</SelectItem>
-                          <SelectItem value="Patrol">Patrol</SelectItem>
-                          <SelectItem value="Control Room">Control Room</SelectItem>
+                          {bulkSitePosts && bulkSitePosts.length > 0 ? (
+                            bulkSitePosts.map((post: Post) => (
+                              <SelectItem key={post.id || post.name} value={post.name}>
+                                {post.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="General">General</SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
+                      {bulkSitePosts && bulkSitePosts.length > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          {bulkSitePosts.length} position{bulkSitePosts.length !== 1 ? "s" : ""} available at this site
+                        </div>
+                      )}
                     </div>
                     <div className="border-t pt-4">
                       <h4 className="font-semibold text-sm mb-3">Filter Guards By:</h4>
