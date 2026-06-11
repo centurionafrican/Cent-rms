@@ -651,6 +651,7 @@ export default function GuardsPage() {
                   <TableHead>ID Number</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Phase</TableHead>
+                  <TableHead>Date Joined</TableHead>
                   <TableHead>Leave Balance</TableHead>
                   <TableHead>Files</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -658,7 +659,7 @@ export default function GuardsPage() {
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="h-24 text-center">No guards found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="h-24 text-center">No guards found.</TableCell></TableRow>
                 ) : (filtered.slice(0, showAll ? filtered.length : 3)).map((guard) => {
                   const badge = getStatusBadge(guard.status)
                   const leaveRemaining = (guard.annual_leave_days || 21) - (guard.leave_days_used || 0)
@@ -677,6 +678,9 @@ export default function GuardsPage() {
                         {guard.email && <div className="text-xs text-muted-foreground">{guard.email}</div>}
                       </TableCell>
                       <TableCell><Badge variant="outline" className={badge.color}>{badge.label}</Badge></TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {guard.date_joined ? new Date(guard.date_joined).toLocaleDateString("en-CA") : "-"}
+                      </TableCell>
                       <TableCell>
                         <span className={`text-sm font-medium ${leaveRemaining <= 3 ? "text-red-600" : ""}`}>{leaveRemaining}</span>
                         <span className="text-xs text-muted-foreground"> / {guard.annual_leave_days || 21}d</span>

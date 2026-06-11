@@ -34,16 +34,8 @@ export async function POST(request: Request) {
         dataStartRow = 4 // skip label, key, note, example rows
       } else {
         // Single header row — normalise labels to snake_case field keys
-        // e.g. "First Name *" → "first_name", "Guard Title" → "guard_title"
-        headers = raw[0].map((h) =>
-          String(h)
-            .replace(/\s*\*$/, "")
-            .replace(/\s*\(.*?\)/g, "")
-            .trim()
-            .toLowerCase()
-            .replace(/\s+/g, "_")
-            .replace(/[^a-z0-9_]/g, "")
-        )
+        // e.g. "First Name *" → "first_name", "Status ⮟ (Select)" → "status"
+        headers = raw[0].map((h) => normalizeHeader(String(h)))
         dataStartRow = 1
       }
 
@@ -59,7 +51,7 @@ export async function POST(request: Request) {
       const text = await file.text()
       const lines = text.split(/\r?\n/).filter((l) => l.trim() && !l.trim().startsWith("#"))
       if (lines.length < 2) return NextResponse.json({ error: "File must have a header row and at least one data row" }, { status: 400 })
-      const headers = lines[0].split(",").map((h) => h.trim().replace(/\s*\*$/, "").toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""))
+      const headers = lines[0].split(",").map((h) => normalizeHeader(h))
       for (let i = 1; i < lines.length; i++) {
         const values = parseCSVLine(lines[i])
         if (values.every((v) => !v.trim())) continue
@@ -92,12 +84,22 @@ export async function POST(request: Request) {
         continue
       }
 
+      // Skip the template's greyed-out example row so it isn't imported as a guard
+      if (
+        first_name === "John" &&
+        last_name === "Doe" &&
+        (row["email"] || "").toLowerCase() === "john.doe@example.com"
+      ) {
+        continue
+      }
+
       const email = row["email"] || null
       const phone = row["phone"] || null
       const id_number = row["id_number"] || row["id"] || null
       const title = row["title"] || "Security Guard"
-      const guard_title = row["guard_title"] || null
-      const status = row["status"] || "recruitment"
+  const guard_title = row["guard_title"] || null
+  const guard_code = row["guard_code"] || null
+  const status = row["status"] || "recruitment"
       const gender = row["gender"] || null
       const education_level = row["education_level"] || null
       const discipline = row["discipline"] || "Excellent"
@@ -140,13 +142,13 @@ const special_skills = skillsFromColumns.length
       try {
         await sql`
           INSERT INTO guards (
-            first_name, last_name, email, phone, title, guard_title, status,
+            first_name, last_name, email, phone, title, guard_title, guard_code, status,
             id_number, annual_leave_days, date_joined, hire_date,
             gender, education_level, discipline, maternity_status,
             languages_spoken, special_skills, bank_name, account_number
           )
           VALUES (
-            ${first_name}, ${last_name}, ${email}, ${phone}, ${title}, ${guard_title}, ${status},
+            ${first_name}, ${last_name}, ${email}, ${phone}, ${title}, ${guard_title}, ${guard_code}, ${status},
             ${id_number}, ${annual_leave_days}, ${date_joined}, ${date_joined},
             ${gender}, ${education_level}, ${discipline}, ${maternity_status},
             ${languages_spoken}, ${special_skills}, ${bank_name}, ${account_number}
@@ -164,6 +166,23 @@ const special_skills = skillsFromColumns.length
     console.error("Import guards error:", error)
     return NextResponse.json({ error: "Failed to import guards" }, { status: 500 })
   }
+}
+
+function normalizeHeader(h: string): string {
+  return String(h)
+    // strip the dropdown marker we add to template headers, e.g. "⮟ (Select)"
+    .replace(/⮟/g, "")
+    .replace(/\bselect\b/gi, "")
+    // strip trailing "*" and any parenthetical hints like "(YYYY-MM-DD)" or "(pipe-sep.)"
+    .replace(/\*/g, "")
+    .replace(/\(.*?\)/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, "")
+    // collapse repeated/trailing underscores
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
 }
 
 function parseCSVLine(line: string): string[] {
