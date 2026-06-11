@@ -73,7 +73,7 @@ export async function GET() {
       g.guard_title || "",
       g.status || "",
       g.employment_status || "",
-      g.date_joined ? new Date(g.date_joined).toISOString().split("T")[0] : "",
+      g.date_joined ? String(g.date_joined instanceof Date ? g.date_joined.toISOString() : g.date_joined).slice(0, 10) : "",
       g.education_level || "",
       g.discipline || "",
       Array.isArray(g.languages_spoken) ? g.languages_spoken.join(", ") : g.languages_spoken || "",

@@ -107,13 +107,22 @@ export async function POST(request: Request) {
       const bank_name = row["bank_name"] || null
       const account_number = row["account_number"] || null
             
-      // Convert Excel serial date to ISO date string if needed
-      let date_joined = row["date_joined"] || new Date().toISOString().split("T")[0]
+      // Resolve date_joined as a plain YYYY-MM-DD string, with no timezone drift.
+      let date_joined = String(row["date_joined"] || "").trim()
       const dateNum = Number(date_joined)
-      if (!isNaN(dateNum) && dateNum > 0) {
-        // Excel serial number: days since 1900-01-01 (accounting for leap year bug)
-        const excelDate = new Date((dateNum - 1) * 86400000 + new Date(1900, 0, 1).getTime())
-        date_joined = excelDate.toISOString().split("T")[0]
+      if (date_joined !== "" && !isNaN(dateNum) && dateNum > 0) {
+        // Excel stored the date as a serial number — decode it with SheetJS's
+        // own parser, which returns exact y/m/d (no UTC shift / off-by-one).
+        const d = XLSX.SSF.parse_date_code(dateNum)
+        if (d) {
+          const pad = (n: number) => String(n).padStart(2, "0")
+          date_joined = `${d.y}-${pad(d.m)}-${pad(d.d)}`
+        }
+      } else if (date_joined !== "") {
+        // Already a string like "2024-01-15" (possibly with a time) — keep the date part only
+        date_joined = date_joined.slice(0, 10)
+      } else {
+        date_joined = new Date().toISOString().split("T")[0]
       }
       
 

@@ -679,7 +679,7 @@ export default function GuardsPage() {
                       </TableCell>
                       <TableCell><Badge variant="outline" className={badge.color}>{badge.label}</Badge></TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {guard.date_joined ? new Date(guard.date_joined).toLocaleDateString("en-CA") : "-"}
+                        {guard.date_joined ? String(guard.date_joined).slice(0, 10) : "-"}
                       </TableCell>
                       <TableCell>
                         <span className={`text-sm font-medium ${leaveRemaining <= 3 ? "text-red-600" : ""}`}>{leaveRemaining}</span>
