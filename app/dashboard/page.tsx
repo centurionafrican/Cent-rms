@@ -33,13 +33,9 @@ async function getDashboardStats() {
     const clientsResult = await sql`SELECT COUNT(*) as count FROM clients`
     const totalClients = Number(clientsResult[0]?.count || 0)
 
-    // Today's shifts: active assignments (assignments that are currently in progress or scheduled for today)
-    const todayShiftsResult = await sql`
-      SELECT COUNT(*) as count FROM assignments 
-      WHERE status IN ('pending', 'scheduled') 
-      AND DATE(assignment_date) = CURRENT_DATE
-    `
-    const todayShifts = Number(todayShiftsResult[0]?.count || 0)
+    // Total shifts: all assignments in the system
+    const totalShiftsResult = await sql`SELECT COUNT(*) as count FROM assignments`
+    const totalShifts = Number(totalShiftsResult[0]?.count || 0)
     
     const pendingAssignmentsResult = await sql`SELECT COUNT(*) as count FROM assignments WHERE status = 'pending'`
     const pendingAssignments = Number(pendingAssignmentsResult[0]?.count || 0)
@@ -55,7 +51,7 @@ async function getDashboardStats() {
     return {
       totalGuards,
       activeSites: totalSites,
-      todayShifts,
+      totalShifts,
       pendingAssignments,
       openIncidents,
       pendingLeaves,
@@ -66,9 +62,8 @@ async function getDashboardStats() {
     return {
       totalGuards: 0,
       activeSites: 0,
-      todayShifts: 0,
+      totalShifts: 0,
       pendingAssignments: 0,
-      coverageRate: 0,
       openIncidents: 0,
       pendingLeaves: 0,
       totalClients: 0,
@@ -147,12 +142,12 @@ export default async function DashboardPage() {
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Today&apos;s Shifts
+              Total Shifts
             </CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.todayShifts}</div>
+            <div className="text-2xl font-bold">{stats.totalShifts}</div>
             <p className="text-xs text-muted-foreground">{stats.pendingAssignments} pending</p>
           </CardContent>
         </Card>

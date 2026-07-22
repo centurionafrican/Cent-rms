@@ -4,10 +4,26 @@ import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
   try {
+    const body = await request.json()
+    const {
+      site_id,
+      shift_id,
+      date_from,
+      date_to,
+      guard_ids,
+      auto_assign,
+      guards_needed,
+      position,
+    } = body
+
+    if (!site_id || !shift_id || !date_from) {
+      return NextResponse.json({ error: "site_id, shift_id and date_from are required" }, { status: 400 })
+    }
+
     // Generate all dates in the range
     const dates: string[] = []
     const start = new Date(date_from)
-    const end = new Date(date_to)
+    const end = new Date(date_to || date_from)
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       dates.push(d.toISOString().split("T")[0])
     }
