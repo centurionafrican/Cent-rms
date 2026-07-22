@@ -38,6 +38,7 @@ export async function POST(request: Request) {
     }
 
     // Create auto-assignment for the reliever with same requirements
+    const notes = `Auto-assigned as reliever for ${assignment.first_name} ${assignment.last_name}`
     const newAssignment = await sql`
       INSERT INTO assignments (
         guard_id,
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
         ${assignment.date_from},
         ${assignment.date_to},
         'auto_assigned',
-        ${'Auto-assigned as reliever for ' + assignment.first_name + ' ' + assignment.last_name}
+        ${notes}
       )
       RETURNING *
     `

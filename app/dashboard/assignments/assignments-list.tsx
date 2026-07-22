@@ -208,7 +208,15 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
     count: "",
     position: "",
   })
-  const [bulkGuardFilters, setBulkGuardFilters] = useState({
+  const [bulkGuardFilters, setBulkGuardFilters] = useState<{
+    title?: string
+    gender?: string
+    level?: string
+    discipline?: string
+    languages?: string[]
+    specialSkills?: string
+    maternalStatus?: string
+  }>({
     title: "",
     gender: "",
     level: "",
@@ -1227,19 +1235,31 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                           </Select>
                         </div>
 
-                        {/* Languages Spoken */}
+                        {/* Languages Spoken - Multi-select */}
                         <div className="grid gap-2">
-                          <Label className="text-sm">Languages Spoken</Label>
-                          <Select value={bulkGuardFilters.language || "all"} onValueChange={(v) => setBulkGuardFilters({ ...bulkGuardFilters, language: v === "all" ? "" : v })}>
-                            <SelectTrigger className="h-9"><SelectValue placeholder="All languages" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All languages</SelectItem>
-                              <SelectItem value="English">English</SelectItem>
-                              <SelectItem value="French">French</SelectItem>
-                              <SelectItem value="Kiswahili">Kiswahili</SelectItem>
-                              <SelectItem value="Kinyarwanda">Kinyarwanda</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Label className="text-sm">Languages Spoken (Select multiple)</Label>
+                          <div className="border rounded p-3 space-y-2 bg-muted/30">
+                            {["English", "French", "Kiswahili", "Kinyarwanda"].map((lang) => (
+                              <div key={lang} className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`lang_${lang}`}
+                                  checked={(bulkGuardFilters.languages || []).includes(lang)}
+                                  onCheckedChange={(checked) => {
+                                    const current = bulkGuardFilters.languages || []
+                                    if (checked) {
+                                      setBulkGuardFilters({ ...bulkGuardFilters, languages: [...current, lang] })
+                                    } else {
+                                      setBulkGuardFilters({ ...bulkGuardFilters, languages: current.filter(l => l !== lang) })
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor={`lang_${lang}`} className="text-sm font-normal cursor-pointer">{lang}</Label>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {bulkGuardFilters.languages?.length ? `${bulkGuardFilters.languages.length} language(s) selected` : "Select to filter"}
+                          </p>
                         </div>
 
                         {/* Special Skills */}

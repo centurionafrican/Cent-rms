@@ -7,7 +7,6 @@ import {
   Users,
   MapPin,
   Calendar,
-  TrendingUp,
   Clock,
   AlertTriangle,
   UserPlus,
@@ -34,9 +33,13 @@ async function getDashboardStats() {
     const clientsResult = await sql`SELECT COUNT(*) as count FROM clients`
     const totalClients = Number(clientsResult[0]?.count || 0)
 
-    // For assignments, use simpler query
-    const assignmentsResult = await sql`SELECT COUNT(*) as count FROM assignments`
-    const totalAssignments = Number(assignmentsResult[0]?.count || 0)
+    // Today's shifts: active assignments (assignments that are currently in progress or scheduled for today)
+    const todayShiftsResult = await sql`
+      SELECT COUNT(*) as count FROM assignments 
+      WHERE status IN ('pending', 'scheduled') 
+      AND DATE(assignment_date) = CURRENT_DATE
+    `
+    const todayShifts = Number(todayShiftsResult[0]?.count || 0)
     
     const pendingAssignmentsResult = await sql`SELECT COUNT(*) as count FROM assignments WHERE status = 'pending'`
     const pendingAssignments = Number(pendingAssignmentsResult[0]?.count || 0)
@@ -52,9 +55,8 @@ async function getDashboardStats() {
     return {
       totalGuards,
       activeSites: totalSites,
-      todayShifts: totalAssignments,
+      todayShifts,
       pendingAssignments,
-      coverageRate: totalAssignments > 0 ? Math.round((pendingAssignments / totalAssignments) * 100) : 100,
       openIncidents,
       pendingLeaves,
       totalClients,
@@ -152,19 +154,6 @@ export default async function DashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.todayShifts}</div>
             <p className="text-xs text-muted-foreground">{stats.pendingAssignments} pending</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-emerald-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Coverage Rate
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.coverageRate}%</div>
-            <p className="text-xs text-muted-foreground">All shifts covered</p>
           </CardContent>
         </Card>
 
