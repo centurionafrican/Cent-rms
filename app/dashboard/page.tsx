@@ -99,95 +99,95 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-8">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
         <Card className="border-l-4 border-l-primary">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Total Employees
             </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.totalGuards}</div>
             <p className="text-xs text-muted-foreground">{stats.totalGuards} active</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-green-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Active Sites
             </CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.activeSites}</div>
-            <p className="text-xs text-muted-foreground">{stats.activeSites} total locations</p>
+            <p className="text-xs text-muted-foreground">{stats.activeSites} locations</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-sky-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Total Clients
             </CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
+            <Briefcase className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.totalClients}</div>
-            <p className="text-xs text-muted-foreground">Registered clients</p>
+            <p className="text-xs text-muted-foreground">Registered</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-blue-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Total Shifts
             </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.totalShifts}</div>
             <p className="text-xs text-muted-foreground">{stats.pendingAssignments} pending</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-amber-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Pending Assignments
             </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.pendingAssignments}</div>
-            <p className="text-xs text-muted-foreground">Scheduled shifts</p>
+            <p className="text-xs text-muted-foreground">Scheduled</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-red-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Open Incidents
             </CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            <AlertTriangle className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.openIncidents}</div>
-            <p className="text-xs text-muted-foreground">Requires attention</p>
+            <p className="text-xs text-muted-foreground">Attention</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-violet-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Pending Leaves
             </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.pendingLeaves}</div>
-            <p className="text-xs text-muted-foreground">Awaiting approval</p>
+            <p className="text-xs text-muted-foreground">Awaiting</p>
           </CardContent>
         </Card>
       </div>
