@@ -33,8 +33,8 @@ async function getDashboardStats() {
     const clientsResult = await sql`SELECT COUNT(*) as count FROM clients`
     const totalClients = Number(clientsResult[0]?.count || 0)
 
-    // Total shifts: all assignments in the system
-    const totalShiftsResult = await sql`SELECT COUNT(*) as count FROM assignments`
+    // Total shifts: all shift definitions in the system
+    const totalShiftsResult = await sql`SELECT COUNT(*) as count FROM shifts`
     const totalShifts = Number(totalShiftsResult[0]?.count || 0)
     
     const pendingAssignmentsResult = await sql`SELECT COUNT(*) as count FROM assignments WHERE status = 'pending'`
@@ -148,7 +148,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.totalShifts}</div>
-            <p className="text-xs text-muted-foreground">{stats.pendingAssignments} pending</p>
+            <p className="text-xs text-muted-foreground">Shift types</p>
           </CardContent>
         </Card>
 
