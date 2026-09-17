@@ -222,7 +222,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
     gender: "",
     level: "",
     discipline: "",
-    language: "",
+    languages: [],
     specialSkills: "",
     maternalStatus: "",
   })
@@ -399,6 +399,29 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
       }
     } catch (error) {
       console.error("Failed to delete assignment:", error)
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedAssignmentIds.length === 0) return
+    if (!confirm(`Are you sure you want to delete ${selectedAssignmentIds.length} selected assignment${selectedAssignmentIds.length === 1 ? "" : "s"}?`)) return
+
+    try {
+      const results = await Promise.all(
+        selectedAssignmentIds.map((id) => fetch(`/api/assignments/${id}`, { method: "DELETE" }))
+      )
+      const deletedIds = selectedAssignmentIds.filter((_, index) => results[index].ok)
+      if (deletedIds.length > 0) {
+        setAssignments((prev) => prev.filter((assignment) => !deletedIds.includes(assignment.id)))
+        setSelectedAssignmentIds((prev) => prev.filter((id) => !deletedIds.includes(id)))
+        router.refresh()
+      }
+      if (deletedIds.length !== selectedAssignmentIds.length) {
+        alert("Some assignments could not be deleted. Please try again.")
+      }
+    } catch (error) {
+      console.error("Failed to delete selected assignments:", error)
+      alert("Failed to delete selected assignments.")
     }
   }
 
@@ -594,10 +617,12 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
   }
 
   function selectAllVisibleAssignments() {
-    if (selectedAssignmentIds.length === filteredAssignments.length) {
-      setSelectedAssignmentIds([])
+    const visibleIds = filteredAssignments.map((assignment) => assignment.id)
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedAssignmentIds.includes(id))
+    if (allVisibleSelected) {
+      setSelectedAssignmentIds((prev) => prev.filter((id) => !visibleIds.includes(id)))
     } else {
-      setSelectedAssignmentIds(filteredAssignments.map((a) => a.id))
+      setSelectedAssignmentIds((prev) => Array.from(new Set([...prev, ...visibleIds])))
     }
   }
 
@@ -1071,7 +1096,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                   <Alert className="mb-4">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      {bulkResult}
+                      Successfully assigned {bulkResult.assigned} of {bulkResult.total} guard{bulkResult.total === 1 ? "" : "s"}.
                     </AlertDescription>
                   </Alert>
                   <Button onClick={() => setIsBulkDialogOpen(false)} className="w-full">
@@ -1655,6 +1680,10 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                     }} className="bg-amber-600 hover:bg-amber-700">
                       Change Status
                     </Button>
+                    <Button size="sm" variant="destructive" onClick={handleBulkDelete}>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Selected
+                    </Button>
                     <Button size="sm" onClick={() => {
                       setFilterJobTitle("")
                       setFilterGender("")
@@ -1674,7 +1703,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                   <TableRow>
                     <TableHead className="w-12">
                       <Checkbox 
-                        checked={selectedAssignmentIds.length > 0}
+                        checked={filteredAssignments.length > 0 && filteredAssignments.every((assignment) => selectedAssignmentIds.includes(assignment.id))}
                         onCheckedChange={selectAllVisibleAssignments}
                       />
                     </TableHead>
