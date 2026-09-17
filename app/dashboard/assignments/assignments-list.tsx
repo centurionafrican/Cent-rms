@@ -47,6 +47,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 // Helper function to get next Thursday
 function getNextThursday(): string {
@@ -208,7 +209,15 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
     count: "",
     position: "",
   })
-  const [bulkGuardFilters, setBulkGuardFilters] = useState({
+  const [bulkGuardFilters, setBulkGuardFilters] = useState<{
+    title?: string
+    gender?: string
+    level?: string
+    discipline?: string
+    languages?: string[]
+    specialSkills?: string
+    maternalStatus?: string
+  }>({
     title: "",
     gender: "",
     level: "",
@@ -228,6 +237,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
   const [weekLoading, setWeekLoading] = useState(false)
   const [selectedSitePosts, setSelectedSitePosts] = useState<Post[]>([])
   const [selectedPostId, setSelectedPostId] = useState("")
+  const [bulkSitePosts, setBulkSitePosts] = useState<Post[]>([])
 
   const weekDates = getWeekDates(weekStart)
 
@@ -699,6 +709,21 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
     }
   }
 
+  async function handleBulkSiteSelection(siteId: string) {
+    setBulkData((prev) => ({ ...prev, site_id: siteId, position: "" }))
+    // Fetch posts for this site so the position dropdown reflects the chosen site
+    try {
+      const res = await fetch(`/api/sites/${siteId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setBulkSitePosts(data.posts || [])
+      }
+    } catch (e) {
+      console.error("Error fetching site posts:", e)
+      setBulkSitePosts([])
+    }
+  }
+
   async function handleRotation() {
     setRotationLoading(true)
     try {
@@ -1060,7 +1085,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                       <Label>Site *</Label>
                       <Select
                         value={bulkData.site_id || ""}
-                        onValueChange={(v) => setBulkData({ ...bulkData, site_id: v })}
+                        onValueChange={handleBulkSiteSelection}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select site" />
@@ -1130,11 +1155,22 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                         <SelectTrigger><SelectValue placeholder="Select position..." /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">Not specified</SelectItem>
-                          <SelectItem value="Gate">Gate</SelectItem>
-                          <SelectItem value="Patrol">Patrol</SelectItem>
-                          <SelectItem value="Control Room">Control Room</SelectItem>
+                          {bulkSitePosts && bulkSitePosts.length > 0 ? (
+                            bulkSitePosts.map((post: Post) => (
+                              <SelectItem key={post.id || post.name} value={post.name}>
+                                {post.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="General">General</SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
+                      {bulkSitePosts && bulkSitePosts.length > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          {bulkSitePosts.length} position{bulkSitePosts.length !== 1 ? "s" : ""} available at this site
+                        </div>
+                      )}
                     </div>
                     <div className="border-t pt-4">
                       <h4 className="font-semibold text-sm mb-3">Filter Guards By:</h4>
@@ -1200,19 +1236,31 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                           </Select>
                         </div>
 
-                        {/* Languages Spoken */}
+                        {/* Languages Spoken - Multi-select */}
                         <div className="grid gap-2">
-                          <Label className="text-sm">Languages Spoken</Label>
-                          <Select value={bulkGuardFilters.language || "all"} onValueChange={(v) => setBulkGuardFilters({ ...bulkGuardFilters, language: v === "all" ? "" : v })}>
-                            <SelectTrigger className="h-9"><SelectValue placeholder="All languages" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All languages</SelectItem>
-                              <SelectItem value="English">English</SelectItem>
-                              <SelectItem value="French">French</SelectItem>
-                              <SelectItem value="Kiswahili">Kiswahili</SelectItem>
-                              <SelectItem value="Kinyarwanda">Kinyarwanda</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Label className="text-sm">Languages Spoken (Select multiple)</Label>
+                          <div className="border rounded p-3 space-y-2 bg-muted/30">
+                            {["English", "French", "Kiswahili", "Kinyarwanda"].map((lang) => (
+                              <div key={lang} className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`lang_${lang}`}
+                                  checked={(bulkGuardFilters.languages || []).includes(lang)}
+                                  onCheckedChange={(checked) => {
+                                    const current = bulkGuardFilters.languages || []
+                                    if (checked) {
+                                      setBulkGuardFilters({ ...bulkGuardFilters, languages: [...current, lang] })
+                                    } else {
+                                      setBulkGuardFilters({ ...bulkGuardFilters, languages: current.filter(l => l !== lang) })
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor={`lang_${lang}`} className="text-sm font-normal cursor-pointer">{lang}</Label>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {bulkGuardFilters.languages?.length ? `${bulkGuardFilters.languages.length} language(s) selected` : "Select to filter"}
+                          </p>
                         </div>
 
                         {/* Special Skills */}
@@ -1725,24 +1773,41 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                           </Select>
                         </TableCell>
                         <TableCell>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-blue-600 hover:text-blue-700 border-blue-200"
-                                  onClick={() => {
-                                    setSelectedAssignment(assignment)
-                                    setIsRelieverDialogOpen(true)
-                                  }}
-                                >
-                                  <UserPlus className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Set Reliever</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          <div className="flex items-center gap-2">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-blue-600 hover:text-blue-700 border-blue-200"
+                                    onClick={() => {
+                                      setSelectedAssignment(assignment)
+                                      setIsRelieverDialogOpen(true)
+                                    }}
+                                  >
+                                    <UserPlus className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Set Reliever</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 hover:text-red-700 border-red-200"
+                                    onClick={() => handleDelete(assignment.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Delete Assignment</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))

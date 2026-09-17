@@ -4,10 +4,31 @@ import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
   try {
+    const body = await request.json()
+    const {
+      site_id,
+      shift_id,
+      date_from,
+      date_to,
+      guard_ids,
+      auto_assign,
+      guards_needed,
+      position,
+    } = body
+
+    const from = String(date_from || "")
+    const to = String(date_to || date_from || "")
+    const siteId = Number(site_id)
+    const shiftId = Number(shift_id)
+
+    if (!Number.isInteger(siteId) || !Number.isInteger(shiftId) || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+      return NextResponse.json({ error: "A valid site, shift, and date range are required" }, { status: 400 })
+    }
+
     // Generate all dates in the range
     const dates: string[] = []
-    const start = new Date(date_from)
-    const end = new Date(date_to)
+    const start = new Date(`${from}T00:00:00Z`)
+    const end = new Date(`${to}T00:00:00Z`)
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       dates.push(d.toISOString().split("T")[0])
     }
@@ -25,17 +46,17 @@ export async function POST(request: Request) {
           AND g.id NOT IN (
             SELECT lr.guard_id FROM leave_requests lr
             WHERE lr.status = 'approved'
-              AND lr.start_date <= ${date_to}
-              AND lr.end_date >= ${date_from}
+              AND lr.start_date <= ${to}
+              AND lr.end_date >= ${from}
           )
         ORDER BY (
           SELECT COUNT(*) FROM assignments a
-          WHERE a.guard_id = g.id AND a.date::date >= ${date_from}::date AND a.date::date <= ${date_to}::date
+          WHERE a.guard_id = g.id AND a.date >= ${from} AND a.date <= ${to}
         ) ASC, RANDOM()
         LIMIT ${needed}
       `
 
-      selectedGuardIds = availableGuards.map((g: { id: number }) => g.id)
+      selectedGuardIds = (availableGuards as unknown as Array<{ id: number }>).map((g) => g.id)
 
       if (selectedGuardIds.length === 0) {
         return NextResponse.json({ error: "No available guards found for the selected date range" }, { status: 400 })
@@ -55,16 +76,16 @@ export async function POST(request: Request) {
         // Check if assignment already exists
         const existing = await sql`
           SELECT id FROM assignments
-          WHERE guard_id = ${guardId} AND site_id = ${site_id} AND shift_id = ${shift_id} AND date::date = ${date}::date
+          WHERE guard_id = ${guardId} AND site_id = ${siteId} AND shift_id = ${shiftId} AND date = ${date}
         `
-        if (existing.length > 0) {
+        if ((existing as unknown as unknown[]).length > 0) {
           skipped++
           continue
         }
 
         await sql`
           INSERT INTO assignments (guard_id, site_id, shift_id, date, status, position)
-          VALUES (${guardId}, ${site_id}, ${shift_id}, ${date}, 'scheduled', ${position || null})
+          VALUES (${guardId}, ${siteId}, ${shiftId}, ${date}, 'scheduled', ${position || null})
         `
         created++
       }

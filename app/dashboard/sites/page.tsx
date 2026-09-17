@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Pencil, Trash2, Search, MapPin, Eye, Users, ChevronRight, Download } from "lucide-react"
+import { ContactsManager } from "@/components/contacts-manager"
 
 const SITE_STATUS_OPTIONS = [
   { value: "on_survey", label: "On Survey", color: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -24,7 +25,8 @@ type Client = { id: number; name: string }
 type Site = {
   id: number
   name: string
-  address: string | null
+  district: string | null
+  sector: string | null
   contact_person: string | null
   contact_phone: string | null
   is_active: boolean
@@ -71,7 +73,7 @@ export default function SitesPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [newPost, setNewPost] = useState("")
   const [formData, setFormData] = useState({
-    name: "", address: "", contact_person: "", contact_phone: "",
+    name: "", district: "", sector: "", contact_person: "", contact_phone: "",
     client_id: "", site_status: "active", guards_needed: "1",
   })
   const [saving, setSaving] = useState(false)
@@ -162,7 +164,7 @@ export default function SitesPage() {
   }
 
   function resetForm() {
-    setFormData({ name: "", address: "", contact_person: "", contact_phone: "", client_id: "", site_status: "active", guards_needed: "1" })
+    setFormData({ name: "", district: "", sector: "", contact_person: "", contact_phone: "", client_id: "", site_status: "active", guards_needed: "1" })
     setPosts([])
     setNewPost("")
   }
@@ -170,7 +172,8 @@ export default function SitesPage() {
   async function openEdit(site: Site) {
     setSelectedSite(site)
     setFormData({
-      name: site.name, address: site.address || "", contact_person: site.contact_person || "",
+      name: site.name, district: site.district || "", sector: site.sector || "",
+      contact_person: site.contact_person || "",
       contact_phone: site.contact_phone || "", client_id: site.client_id ? String(site.client_id) : "",
       site_status: site.site_status || "active", guards_needed: String(site.guards_needed || 1),
     })
@@ -257,18 +260,30 @@ export default function SitesPage() {
           </Select>
         </div>
       </div>
-      <div className="space-y-2">
-        <Label>Address</Label>
-        <Textarea value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
-      </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Contact Person</Label>
-          <Input value={formData.contact_person} onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })} />
+          <Label>District</Label>
+          <Input value={formData.district} onChange={(e) => setFormData({ ...formData, district: e.target.value })} placeholder="e.g., Gasabo" />
         </div>
         <div className="space-y-2">
-          <Label>Contact Phone</Label>
-          <Input value={formData.contact_phone} onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })} />
+          <Label>Sector</Label>
+          <Input value={formData.sector} onChange={(e) => setFormData({ ...formData, sector: e.target.value })} placeholder="e.g., Kimironko" />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <div>
+          <Label className="text-base font-semibold">Primary Contact Details</Label>
+          <p className="text-xs text-muted-foreground mt-1">Add additional contacts in the "Site Contacts" section in the detail view</p>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Contact Person *</Label>
+            <Input required value={formData.contact_person} onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })} placeholder="Primary contact name" />
+          </div>
+          <div className="space-y-2">
+            <Label>Contact Phone</Label>
+            <Input value={formData.contact_phone} onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })} placeholder="Primary phone" />
+          </div>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -372,7 +387,8 @@ export default function SitesPage() {
                 <TableRow>
                   <TableHead>Site Name</TableHead>
                   <TableHead>Client</TableHead>
-                  <TableHead>Address</TableHead>
+                  <TableHead>District</TableHead>
+                  <TableHead>Sector</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Guards Needed</TableHead>
@@ -381,14 +397,15 @@ export default function SitesPage() {
               </TableHeader>
               <TableBody>
                 {displayedSites.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="h-24 text-center">No sites found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="h-24 text-center">No sites found.</TableCell></TableRow>
                 ) : displayedSites.map((site) => {
                   const statusOpt = SITE_STATUS_OPTIONS.find((s) => s.value === site.site_status)
                   return (
                     <TableRow key={site.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown(site)}>
                       <TableCell className="font-medium">{site.name}</TableCell>
                       <TableCell>{site.client_name || <span className="text-muted-foreground">-</span>}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{site.address || "-"}</TableCell>
+                      <TableCell>{site.district || "-"}</TableCell>
+                      <TableCell>{site.sector || "-"}</TableCell>
                       <TableCell>
                         <div className="text-sm">
                           {site.contact_person && <div>{site.contact_person}</div>}
@@ -532,6 +549,11 @@ export default function SitesPage() {
                 )}
               </div>
             </div>
+          )}
+
+          {/* Multiple Contacts */}
+          {selectedSite && (
+            <ContactsManager entityId={selectedSite.id} entityType="site" title="Site Contacts" />
           )}
           
           <DialogFooter>

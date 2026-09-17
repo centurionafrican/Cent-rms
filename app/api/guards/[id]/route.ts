@@ -28,7 +28,7 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { first_name, last_name, email, phone, address, title, status, id_number, annual_leave_days, date_joined, guard_title, gender, education_level, languages_spoken, discipline, special_skills, maternity_status } = body
+    const { first_name, last_name, email, phone, address, title, status, id_number, annual_leave_days, date_joined, guard_title, gender, education_level, languages_spoken, discipline, special_skills, maternity_status, bank_name, account_number } = body
 
     const result = await sql`
       UPDATE guards SET
@@ -49,6 +49,8 @@ export async function PUT(
         discipline = ${discipline || 'Excellent'},
         special_skills = ${special_skills || null},
         maternity_status = ${gender === 'Female' ? maternity_status || 'Not Applicable' : 'Not Applicable'},
+        bank_name = ${bank_name || null},
+        account_number = ${account_number || null},
         updated_at = NOW()
       WHERE id = ${id}
       RETURNING *

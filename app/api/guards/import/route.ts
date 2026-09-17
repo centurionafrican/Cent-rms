@@ -34,16 +34,8 @@ export async function POST(request: Request) {
         dataStartRow = 4 // skip label, key, note, example rows
       } else {
         // Single header row — normalise labels to snake_case field keys
-        // e.g. "First Name *" → "first_name", "Guard Title" → "guard_title"
-        headers = raw[0].map((h) =>
-          String(h)
-            .replace(/\s*\*$/, "")
-            .replace(/\s*\(.*?\)/g, "")
-            .trim()
-            .toLowerCase()
-            .replace(/\s+/g, "_")
-            .replace(/[^a-z0-9_]/g, "")
-        )
+        // e.g. "First Name *" → "first_name", "Status ⮟ (Select)" → "status"
+        headers = raw[0].map((h) => normalizeHeader(String(h)))
         dataStartRow = 1
       }
 
@@ -59,7 +51,7 @@ export async function POST(request: Request) {
       const text = await file.text()
       const lines = text.split(/\r?\n/).filter((l) => l.trim() && !l.trim().startsWith("#"))
       if (lines.length < 2) return NextResponse.json({ error: "File must have a header row and at least one data row" }, { status: 400 })
-      const headers = lines[0].split(",").map((h) => h.trim().replace(/\s*\*$/, "").toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""))
+      const headers = lines[0].split(",").map((h) => normalizeHeader(h))
       for (let i = 1; i < lines.length; i++) {
         const values = parseCSVLine(lines[i])
         if (values.every((v) => !v.trim())) continue
@@ -92,50 +84,83 @@ export async function POST(request: Request) {
         continue
       }
 
+      // Skip the template's greyed-out example row so it isn't imported as a guard
+      if (
+        first_name === "John" &&
+        last_name === "Doe" &&
+        (row["email"] || "").toLowerCase() === "john.doe@example.com"
+      ) {
+        continue
+      }
+
       const email = row["email"] || null
       const phone = row["phone"] || null
       const id_number = row["id_number"] || row["id"] || null
       const title = row["title"] || "Security Guard"
-      const guard_title = row["guard_title"] || null
-      const status = row["status"] || "recruitment"
+  const guard_title = row["guard_title"] || null
+  const guard_code = row["guard_code"] || null
+  const status = row["status"] || "recruitment"
       const gender = row["gender"] || null
       const education_level = row["education_level"] || null
       const discipline = row["discipline"] || "Excellent"
       const maternity_status = row["maternity_status"] || "Not Applicable"
+      const bank_name = row["bank_name"] || null
+      const account_number = row["account_number"] || null
             
-      // Convert Excel serial date to ISO date string if needed
-      let date_joined = row["date_joined"] || new Date().toISOString().split("T")[0]
+      // Resolve date_joined as a plain YYYY-MM-DD string, with no timezone drift.
+      let date_joined = String(row["date_joined"] || "").trim()
       const dateNum = Number(date_joined)
-      if (!isNaN(dateNum) && dateNum > 0) {
-        // Excel serial number: days since 1900-01-01 (accounting for leap year bug)
-        const excelDate = new Date((dateNum - 1) * 86400000 + new Date(1900, 0, 1).getTime())
-        date_joined = excelDate.toISOString().split("T")[0]
+      if (date_joined !== "" && !isNaN(dateNum) && dateNum > 0) {
+        // Excel stored the date as a serial number — decode it with SheetJS's
+        // own parser, which returns exact y/m/d (no UTC shift / off-by-one).
+        const d = XLSX.SSF.parse_date_code(dateNum)
+        if (d) {
+          const pad = (n: number) => String(n).padStart(2, "0")
+          date_joined = `${d.y}-${pad(d.m)}-${pad(d.d)}`
+        }
+      } else if (date_joined !== "") {
+        // Already a string like "2024-01-15" (possibly with a time) — keep the date part only
+        date_joined = date_joined.slice(0, 10)
+      } else {
+        date_joined = new Date().toISOString().split("T")[0]
       }
       
 
       const annual_leave_days = Number.parseInt(row["annual_leave_days"] || "21") || 21
 
-const languages_spoken = row["languages_spoken"]
-  ? row["languages_spoken"].split("|").map((v) => v.trim()).filter(Boolean)
-  : []
+// Languages: support split columns (language_1..language_4) AND legacy pipe-separated
+const languagesFromColumns = ["language_1", "language_2", "language_3", "language_4"]
+  .map((k) => (row[k] || "").trim())
+  .filter(Boolean)
+const languages_spoken = languagesFromColumns.length
+  ? Array.from(new Set(languagesFromColumns))
+  : row["languages_spoken"]
+    ? Array.from(new Set(row["languages_spoken"].split("|").map((v) => v.trim()).filter(Boolean)))
+    : []
 
-const special_skills = row["special_skills"]
-  ? row["special_skills"].split("|").map((v) => v.trim()).filter(Boolean)
-  : []
+// Skills: support split columns (skill_1, skill_2) AND legacy pipe-separated
+const skillsFromColumns = ["skill_1", "skill_2"]
+  .map((k) => (row[k] || "").trim())
+  .filter(Boolean)
+const special_skills = skillsFromColumns.length
+  ? Array.from(new Set(skillsFromColumns))
+  : row["special_skills"]
+    ? Array.from(new Set(row["special_skills"].split("|").map((v) => v.trim()).filter(Boolean)))
+    : []
 
       try {
         await sql`
           INSERT INTO guards (
-            first_name, last_name, email, phone, title, guard_title, status,
+            first_name, last_name, email, phone, title, guard_title, guard_code, status,
             id_number, annual_leave_days, date_joined, hire_date,
             gender, education_level, discipline, maternity_status,
-            languages_spoken, special_skills
+            languages_spoken, special_skills, bank_name, account_number
           )
           VALUES (
-            ${first_name}, ${last_name}, ${email}, ${phone}, ${title}, ${guard_title}, ${status},
+            ${first_name}, ${last_name}, ${email}, ${phone}, ${title}, ${guard_title}, ${guard_code}, ${status},
             ${id_number}, ${annual_leave_days}, ${date_joined}, ${date_joined},
             ${gender}, ${education_level}, ${discipline}, ${maternity_status},
-            ${languages_spoken}, ${special_skills}
+            ${languages_spoken}, ${special_skills}, ${bank_name}, ${account_number}
           )
           ON CONFLICT (id_number) DO NOTHING
         `
@@ -150,6 +175,23 @@ const special_skills = row["special_skills"]
     console.error("Import guards error:", error)
     return NextResponse.json({ error: "Failed to import guards" }, { status: 500 })
   }
+}
+
+function normalizeHeader(h: string): string {
+  return String(h)
+    // strip the dropdown marker we add to template headers, e.g. "⮟ (Select)"
+    .replace(/⮟/g, "")
+    .replace(/\bselect\b/gi, "")
+    // strip trailing "*" and any parenthetical hints like "(YYYY-MM-DD)" or "(pipe-sep.)"
+    .replace(/\*/g, "")
+    .replace(/\(.*?\)/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, "")
+    // collapse repeated/trailing underscores
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
 }
 
 function parseCSVLine(line: string): string[] {

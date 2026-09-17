@@ -20,15 +20,15 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, contact_person, contact_email, contact_phone, address } = body
+    const { name, contact_person, contact_email, contact_phone, district, sector, notes } = body
 
     if (!name) {
       return NextResponse.json({ error: "Client name is required" }, { status: 400 })
     }
 
     const result = await sql`
-      INSERT INTO clients (name, contact_person, contact_email, contact_phone, address)
-      VALUES (${name}, ${contact_person || null}, ${contact_email || null}, ${contact_phone || null}, ${address || null})
+      INSERT INTO clients (name, contact_person, contact_email, contact_phone, district, sector, notes)
+      VALUES (${name}, ${contact_person || null}, ${contact_email || null}, ${contact_phone || null}, ${district || null}, ${sector || null}, ${notes || null})
       RETURNING *
     `
 

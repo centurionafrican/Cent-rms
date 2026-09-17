@@ -68,14 +68,31 @@ export async function GET(request: Request) {
 // POST — roster manager or admin creates off day(s)
 export async function POST(request: Request) {
   try {
+    const user = await getSession()
     if (!user || !["roster_manager", "admin"].includes(user.role)) {
       return NextResponse.json({ error: "Only Roster Managers can plan offs" }, { status: 403 })
     }
 
     const body = await request.json()
-    // Support single off or bulk { guard_id, dates: [], reason, notes }
-    const { guard_id, dates, date, reason, notes } = body
-    const datesArray: string[] = dates ?? (date ? [date] : [])
+    // Support single off, bulk { guard_id, dates: [], reason, notes }, or range { guard_id, start_date, end_date, reason, notes }
+    const { guard_id, dates, date, start_date, end_date, reason, notes } = body
+    
+    // Build dates array from different input modes
+    let datesArray: string[] = []
+    
+    if (start_date && end_date) {
+      // Date range mode - generate all dates in the range
+      const start = new Date(start_date)
+      const finish = new Date(end_date)
+      const current = new Date(start)
+      while (current <= finish) {
+        datesArray.push(current.toISOString().split("T")[0])
+        current.setDate(current.getDate() + 1)
+      }
+    } else {
+      // Single dates mode
+      datesArray = dates ?? (date ? [date] : [])
+    }
 
     if (!guard_id || datesArray.length === 0 || !reason?.trim()) {
       return NextResponse.json({ error: "guard_id, at least one date, and reason are required" }, { status: 400 })
@@ -88,9 +105,9 @@ export async function POST(request: Request) {
     for (const d of datesArray) {
       try {
         const [row] = await sql`
-          INSERT INTO guard_offs (guard_id, date, reason, notes, created_by)
-          VALUES (${guard_id}, ${d}::date, ${reason.trim()}, ${notes ?? null}, ${user.id})
-          ON CONFLICT (guard_id, date) DO UPDATE SET reason = EXCLUDED.reason, notes = EXCLUDED.notes
+          INSERT INTO guard_offs (guard_id, date, start_date, end_date, reason, notes, created_by)
+          VALUES (${guard_id}, ${d}::date, ${start_date || null}, ${end_date || null}, ${reason.trim()}, ${notes ?? null}, ${user.id})
+          ON CONFLICT (guard_id, date) DO UPDATE SET reason = EXCLUDED.reason, notes = EXCLUDED.notes, start_date = EXCLUDED.start_date, end_date = EXCLUDED.end_date
           RETURNING *
         `
         created.push(row)
@@ -125,6 +142,7 @@ export async function POST(request: Request) {
 // DELETE — remove a specific off day
 export async function DELETE(request: Request) {
   try {
+    const user = await getSession()
     if (!user || !["roster_manager", "admin"].includes(user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }

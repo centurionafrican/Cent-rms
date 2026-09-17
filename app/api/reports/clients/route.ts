@@ -11,8 +11,8 @@ export async function GET() {
         c.contact_person                                                    AS "Contact Person",
         c.contact_email                                                     AS "Email",
         c.contact_phone                                                     AS "Phone",
-        c.city                                                              AS "City",
-        c.address                                                           AS "Address",
+        c.district                                                          AS "District",
+        c.sector                                                            AS "Sector",
         CASE WHEN c.is_active THEN 'Active' ELSE 'Inactive' END            AS "Status",
         CAST(COUNT(s.id) AS INTEGER)                                        AS "Total Sites",
         COALESCE(SUM(s.guards_needed), 0)                                  AS "Guards Needed",
@@ -22,13 +22,13 @@ export async function GET() {
       FROM clients c
       LEFT JOIN sites s ON s.client_id = c.id
       GROUP BY c.id, c.name, c.contact_person, c.contact_email, c.contact_phone,
-               c.city, c.address, c.is_active, c.notes, c.created_at
+               c.district, c.sector, c.is_active, c.notes, c.created_at
       ORDER BY c.name
     `
 
     const headers = [
-      "#", "Client Name", "Contact Person", "Email", "Phone", "City",
-      "Address", "Status", "Total Sites", "Guards Needed", "Sites", "Notes", "Created At",
+      "#", "Client Name", "Contact Person", "Email", "Phone", "District",
+      "Sector", "Status", "Total Sites", "Guards Needed", "Sites", "Notes", "Created At",
     ]
 
     const rows = clients.map(r =>

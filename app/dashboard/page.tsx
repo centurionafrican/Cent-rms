@@ -7,7 +7,6 @@ import {
   Users,
   MapPin,
   Calendar,
-  TrendingUp,
   Clock,
   AlertTriangle,
   UserPlus,
@@ -34,9 +33,9 @@ async function getDashboardStats() {
     const clientsResult = await sql`SELECT COUNT(*) as count FROM clients`
     const totalClients = Number(clientsResult[0]?.count || 0)
 
-    // For assignments, use simpler query
-    const assignmentsResult = await sql`SELECT COUNT(*) as count FROM assignments`
-    const totalAssignments = Number(assignmentsResult[0]?.count || 0)
+    // Total shifts: all shift definitions in the system
+    const totalShiftsResult = await sql`SELECT COUNT(*) as count FROM shifts`
+    const totalShifts = Number(totalShiftsResult[0]?.count || 0)
     
     const pendingAssignmentsResult = await sql`SELECT COUNT(*) as count FROM assignments WHERE status = 'pending'`
     const pendingAssignments = Number(pendingAssignmentsResult[0]?.count || 0)
@@ -52,9 +51,8 @@ async function getDashboardStats() {
     return {
       totalGuards,
       activeSites: totalSites,
-      todayShifts: totalAssignments,
+      totalShifts,
       pendingAssignments,
-      coverageRate: totalAssignments > 0 ? Math.round((pendingAssignments / totalAssignments) * 100) : 100,
       openIncidents,
       pendingLeaves,
       totalClients,
@@ -64,9 +62,8 @@ async function getDashboardStats() {
     return {
       totalGuards: 0,
       activeSites: 0,
-      todayShifts: 0,
+      totalShifts: 0,
       pendingAssignments: 0,
-      coverageRate: 0,
       openIncidents: 0,
       pendingLeaves: 0,
       totalClients: 0,
@@ -102,108 +99,95 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-8">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
         <Card className="border-l-4 border-l-primary">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Total Employees
             </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.totalGuards}</div>
             <p className="text-xs text-muted-foreground">{stats.totalGuards} active</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-green-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Active Sites
             </CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.activeSites}</div>
-            <p className="text-xs text-muted-foreground">{stats.activeSites} total locations</p>
+            <p className="text-xs text-muted-foreground">{stats.activeSites} locations</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-sky-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Total Clients
             </CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
+            <Briefcase className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.totalClients}</div>
-            <p className="text-xs text-muted-foreground">Registered clients</p>
+            <p className="text-xs text-muted-foreground">Registered</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-blue-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Today&apos;s Shifts
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
+              Total Shifts
             </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.todayShifts}</div>
-            <p className="text-xs text-muted-foreground">{stats.pendingAssignments} pending</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-emerald-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Coverage Rate
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.coverageRate}%</div>
-            <p className="text-xs text-muted-foreground">All shifts covered</p>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold">{stats.totalShifts}</div>
+            <p className="text-xs text-muted-foreground">Shift types</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-amber-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Pending Assignments
             </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.pendingAssignments}</div>
-            <p className="text-xs text-muted-foreground">Scheduled shifts</p>
+            <p className="text-xs text-muted-foreground">Scheduled</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-red-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Open Incidents
             </CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            <AlertTriangle className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.openIncidents}</div>
-            <p className="text-xs text-muted-foreground">Requires attention</p>
+            <p className="text-xs text-muted-foreground">Attention</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-violet-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Pending Leaves
             </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.pendingLeaves}</div>
-            <p className="text-xs text-muted-foreground">Awaiting approval</p>
+            <p className="text-xs text-muted-foreground">Awaiting</p>
           </CardContent>
         </Card>
       </div>

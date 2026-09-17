@@ -15,14 +15,10 @@ export async function GET(request: Request) {
       const absent = await sql`
         SELECT COUNT(*) as count FROM attendance WHERE status = 'absent' AND date >= ${from}::date AND date <= ${to}::date
       `
-      const late = await sql`
-        SELECT COUNT(*) as count FROM attendance WHERE status = 'late' AND date >= ${from}::date AND date <= ${to}::date
-      `
       const daily = await sql`
         SELECT date, 
           COUNT(CASE WHEN status = 'present' THEN 1 END) as present,
-          COUNT(CASE WHEN status = 'absent' THEN 1 END) as absent,
-          COUNT(CASE WHEN status = 'late' THEN 1 END) as late
+          COUNT(CASE WHEN status = 'absent' THEN 1 END) as absent
         FROM attendance
         WHERE date >= ${from}::date AND date <= ${to}::date
         GROUP BY date
@@ -32,7 +28,6 @@ export async function GET(request: Request) {
         summary: {
           present: present[0]?.count || 0,
           absent: absent[0]?.count || 0,
-          late: late[0]?.count || 0,
         },
         trend: daily,
       })

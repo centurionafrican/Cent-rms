@@ -20,7 +20,8 @@ const STATUS_OPTIONS = [
   { value: "probation", label: "Probation", color: "bg-amber-100 text-amber-700 border-amber-200" },
   { value: "active", label: "Full Active", color: "bg-green-100 text-green-700 border-green-200" },
   { value: "retired", label: "Retired", color: "bg-gray-100 text-gray-600 border-gray-200" },
-  { value: "quit", label: "Quit", color: "bg-orange-100 text-orange-700 border-orange-200" },
+  { value: "abandon", label: "Abandon", color: "bg-orange-100 text-orange-700 border-orange-200" },
+  { value: "resigned", label: "Resigned", color: "bg-orange-200 text-orange-800 border-orange-300" },
   { value: "dismissed", label: "Dismissed", color: "bg-red-100 text-red-700 border-red-200" },
   { value: "deceased", label: "Deceased", color: "bg-gray-200 text-gray-800 border-gray-300" },
 ]
@@ -32,8 +33,8 @@ function getStatusBadge(status: string) {
 interface Attachment { url: string; filename: string; type: string; size: number; uploaded_at: string }
 
 type Guard = {
-  id: number; first_name: string; last_name: string; email: string | null; phone: string | null
-  title: string | null; id_number: string | null; hire_date: string | null; date_joined: string | null
+  id: number; first_name: string; last_name: string; email: string | null; phone: string | null; guard_code: string | null
+  title: string | null; id_number: string | null; hire_date: string | null; date_joined: string | null; bank_name: string | null; account_number: string | null
   status: string; annual_leave_days: number; leave_days_used: number; attachments: Attachment[] | null; created_at: string
   guard_title?: string | null; gender?: string | null; education_level?: string | null; languages_spoken?: string[] | null; discipline?: string | null; special_skills?: string[] | null; maternity_status?: string | null
 }
@@ -75,8 +76,8 @@ export default function GuardsPage() {
   const importFileRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
-    first_name: "", last_name: "", email: "", phone: "", title: "Security Guard",
-    status: "recruitment", id_number: "", annual_leave_days: "21", date_joined: new Date().toISOString().split("T")[0],
+    first_name: "", last_name: "", email: "", phone: "", guard_code: "", title: "Security Guard",
+    status: "recruitment", id_number: "", annual_leave_days: "21", bank_name: "", account_number: "", date_joined: new Date().toISOString().split("T")[0],
     guard_title: "", gender: "", education_level: "", languages_spoken: [] as string[], discipline: "Excellent", special_skills: [] as string[], maternity_status: "Not Applicable",
   })
 
@@ -92,7 +93,7 @@ export default function GuardsPage() {
   }
 
   function resetForm() {
-    setFormData({ first_name: "", last_name: "", email: "", phone: "", title: "Security Guard", status: "recruitment", id_number: "", annual_leave_days: "21", date_joined: new Date().toISOString().split("T")[0], guard_title: "", gender: "", education_level: "", languages_spoken: [], discipline: "Excellent", special_skills: [], maternity_status: "Not Applicable" })
+    setFormData({ first_name: "", last_name: "", email: "", phone: "", guard_code: "", title: "Security Guard", status: "recruitment", id_number: "", annual_leave_days: "21", bank_name: "", account_number: "", date_joined: new Date().toISOString().split("T")[0], guard_title: "", gender: "", education_level: "", languages_spoken: [], discipline: "Excellent", special_skills: [], maternity_status: "Not Applicable" })
     setPendingFiles([])
   }
 
@@ -190,7 +191,7 @@ export default function GuardsPage() {
 
   function openEdit(guard: Guard) {
     setSelectedGuard(guard)
-    setFormData({ first_name: guard.first_name, last_name: guard.last_name, email: guard.email || "", phone: guard.phone || "", title: guard.title || "Security Guard", status: guard.status, id_number: guard.id_number || "", annual_leave_days: String(guard.annual_leave_days || 21), date_joined: guard.date_joined || "", guard_title: guard.guard_title || "", gender: guard.gender || "", education_level: guard.education_level || "", languages_spoken: guard.languages_spoken || [], discipline: guard.discipline || "Excellent", special_skills: guard.special_skills || [], maternity_status: guard.maternity_status || "Not Applicable" })
+    setFormData({ first_name: guard.first_name, last_name: guard.last_name, email: guard.email || "", phone: guard.phone || "", guard_code: guard.guard_code || "", title: guard.title || "Security Guard", status: guard.status, id_number: guard.id_number || "", annual_leave_days: String(guard.annual_leave_days || 21), bank_name: guard.bank_name || "", account_number: guard.account_number || "", date_joined: guard.date_joined || "", guard_title: guard.guard_title || "", gender: guard.gender || "", education_level: guard.education_level || "", languages_spoken: guard.languages_spoken || [], discipline: guard.discipline || "Excellent", special_skills: guard.special_skills || [], maternity_status: guard.maternity_status || "Not Applicable" })
     setPendingFiles([])
     setIsEditOpen(true)
   }
@@ -233,22 +234,26 @@ export default function GuardsPage() {
   }
 
   async function downloadTemplate() {
-    // xlsx exports as a namespace — use * as, never { default: ... }
-    const XLSX = await import("xlsx").then((m) => m.default ?? m)
+    // exceljs gives us real per-cell data validation (dropdowns), which the
+    // community SheetJS build cannot write.
+    const ExcelJS = await import("exceljs").then((m) => m.default ?? m)
 
     // ── Column definitions ─────────────────────────────────────────────────
     const COLUMNS: { key: string; label: string; example: string; dropdown?: string[] }[] = [
       { key: "first_name",        label: "First Name *",                   example: "John" },
       { key: "last_name",         label: "Last Name *",                    example: "Doe" },
+      { key: "guard_code",        label: "Guard Code",                     example: "GRD001" },
       { key: "email",             label: "Email",                          example: "john.doe@example.com" },
       { key: "phone",             label: "Phone",                          example: "+250700000000" },
       { key: "id_number",         label: "ID Number",                      example: "1198780123456789" },
       { key: "date_joined",       label: "Date Joined (YYYY-MM-DD)",       example: "2024-01-15" },
+      { key: "bank_name",         label: "Bank Name",                      example: "Bank of Kigali" },
+      { key: "account_number",    label: "Account Number (A/C)",           example: "00012345678" },
       { key: "title",             label: "Job Title",                      example: "Security Guard" },
       { key: "guard_title",       label: "Guard Title",                    example: "Team Leader",
         dropdown: ["Coordinator", "Supervisor", "Team Leader", "Security Guard"] },
       { key: "status",            label: "Status",                         example: "active",
-        dropdown: ["recruitment", "training", "active", "inactive", "suspended", "terminated"] },
+        dropdown: ["recruitment", "training", "probation", "active", "retired", "abandon", "resigned", "dismissed", "deceased"] },
       { key: "gender",            label: "Gender",                         example: "Male",
         dropdown: ["Male", "Female"] },
       { key: "education_level",   label: "Education Level",                example: "Bachelor's Degree",
@@ -257,70 +262,103 @@ export default function GuardsPage() {
         dropdown: ["Excellent", "Very Good", "Good", "Needs Improvement", "Under Review"] },
       { key: "maternity_status",  label: "Maternity Status",               example: "Not Applicable",
         dropdown: ["Not Applicable", "Not Pregnant", "Pregnant", "On Maternity Leave", "Returned from Maternity Leave"] },
-      { key: "languages_spoken",  label: "Languages Spoken (pipe-sep.)",   example: "English|Kinyarwanda" },
-      { key: "special_skills",    label: "Special Skills (pipe-sep.)",     example: "CPO (Close Protection Officer)" },
+      { key: "language_1",        label: "Language 1",                     example: "English",
+        dropdown: ["English", "French", "Kiswahili", "Kinyarwanda"] },
+      { key: "language_2",        label: "Language 2",                     example: "Kinyarwanda",
+        dropdown: ["English", "French", "Kiswahili", "Kinyarwanda"] },
+      { key: "language_3",        label: "Language 3",                     example: "",
+        dropdown: ["English", "French", "Kiswahili", "Kinyarwanda"] },
+      { key: "language_4",        label: "Language 4",                     example: "",
+        dropdown: ["English", "French", "Kiswahili", "Kinyarwanda"] },
+      { key: "skill_1",           label: "Skill 1",                        example: "CPO (Close Protection Officer)",
+        dropdown: ["CPO (Close Protection Officer)", "Control Room Operations"] },
+      { key: "skill_2",           label: "Skill 2",                        example: "",
+        dropdown: ["CPO (Close Protection Officer)", "Control Room Operations"] },
       { key: "annual_leave_days", label: "Annual Leave Days",              example: "21" },
     ]
 
-    const ROW_COUNT = 500
-    const COL_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
-
-    // ── Build workbook ─────────────────────────────────────────────────────
-    const wb = XLSX.utils.book_new()
-
-    // Hidden Options sheet — each dropdown col gets its own column
-    const dropdownCols = COLUMNS.filter((c) => c.dropdown)
-    const maxOptRows = Math.max(...dropdownCols.map((c) => c.dropdown!.length))
-    const optData: string[][] = []
-    for (let r = 0; r < maxOptRows; r++) {
-      optData.push(dropdownCols.map((c) => c.dropdown![r] ?? ""))
+    const ROW_COUNT = 700          // data rows that get a dropdown
+    const FIRST_DATA_ROW = 3       // row 1 = header, row 2 = example, rows 3+ = entry
+    const LAST_DATA_ROW = FIRST_DATA_ROW + ROW_COUNT - 1
+    const colLetter = (i: number) => {
+      let s = ""; let n = i + 1
+      while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26) }
+      return s
     }
-    const optWs = XLSX.utils.aoa_to_sheet(optData)
-    optWs["!cols"] = dropdownCols.map((c) => ({ wch: Math.max(...c.dropdown!.map((v) => v.length)) + 2 }))
-    XLSX.utils.book_append_sheet(wb, optWs, "Options")
 
-    // Main import sheet — row 1 header, row 2 example, rows 3-500 blank
-    const headerRow  = COLUMNS.map((c) => c.label)
-    const exampleRow = COLUMNS.map((c) => c.example)
-    const blankRows: string[][] = Array.from({ length: ROW_COUNT - 1 }, () => Array(COLUMNS.length).fill(""))
-    const ws = XLSX.utils.aoa_to_sheet([headerRow, exampleRow, ...blankRows])
-    ws["!cols"]   = COLUMNS.map((c) => ({ wch: Math.max(c.label.length, c.example.length, 20) + 2 }))
-    ws["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", activeCell: "A2", sqref: "A2" }
+    const wb = new ExcelJS.Workbook()
 
-    // Inject <dataValidations> XML directly — SheetJS writes ws["!xml"] verbatim
-    // after </sheetData>, which is exactly where Excel expects dataValidations.
-    const dvEntries = dropdownCols.map((col) => {
-      const mainIdx = COLUMNS.findIndex((c) => c.key === col.key)
-      const optIdx  = dropdownCols.findIndex((c) => c.key === col.key)
-      const mainCol = COL_LETTERS[mainIdx]
-      const optCol  = COL_LETTERS[optIdx]
-      const count   = col.dropdown!.length
-      const sqref   = `${mainCol}2:${mainCol}${ROW_COUNT + 1}`
-      // formula1 references the hidden Options sheet
-      const f1 = `Options!$${optCol}$1:$${optCol}$${count}`
-      return (
-        `<dataValidation type="list" allowBlank="1" showDropDown="0" ` +
-        `showErrorMessage="1" errorStyle="stop" ` +
-        `errorTitle="Invalid value" ` +
-        `error="Please select a value from the dropdown list." ` +
-        `sqref="${sqref}">` +
-        `<formula1>${f1}</formula1>` +
-        `</dataValidation>`
-      )
+    // ── Hidden Options sheet: one column per dropdown field ──────────────────
+    const dropdownCols = COLUMNS.filter((c) => c.dropdown)
+    const optWs = wb.addWorksheet("Options")
+    dropdownCols.forEach((col, ci) => {
+      optWs.getColumn(ci + 1).values = [col.key, ...col.dropdown!]
+      optWs.getColumn(ci + 1).width = Math.max(...col.dropdown!.map((v) => v.length)) + 2
     })
-    ws["!xml"] = `<dataValidations count="${dvEntries.length}">${dvEntries.join("")}</dataValidations>`
+    optWs.state = "veryHidden"
 
-    XLSX.utils.book_append_sheet(wb, ws, "Guards Import")
+    // ── Main import sheet ────────────────────────────────────────────────────
+    const ws = wb.addWorksheet("Guards Import", { views: [{ state: "frozen", ySplit: 2 }] })
 
-    // Hide the Options sheet
-    if (!wb.Workbook) wb.Workbook = { Sheets: [], Views: [] }
-    wb.Workbook.Sheets = wb.SheetNames.map((name) => ({
-      name,
-      Hidden: name === "Options" ? 1 : 0,
-    }))
+    // Header row (row 1) — dropdown columns get a "⮟ Select" marker
+    const headerRow = ws.getRow(1)
+    COLUMNS.forEach((col, ci) => {
+      const cell = headerRow.getCell(ci + 1)
+      cell.value = col.dropdown ? `${col.label} ⮟ (Select)` : col.label
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } }
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: col.dropdown ? "FF1D4ED8" : "FF374151" } }
+      cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true }
+      ws.getColumn(ci + 1).width = Math.max(col.label.length + (col.dropdown ? 12 : 2), col.example.length, 16)
+      if (col.dropdown) {
+        cell.note = `Select one of:\n${col.dropdown.map((v) => `• ${v}`).join("\n")}`
+      }
+    })
+    headerRow.height = 28
 
-    // Write and trigger browser download
-    const buf  = XLSX.write(wb, { bookType: "xlsx", type: "array" }) as ArrayBuffer
+    // Example row (row 2) — greyed-out sample, clearly marked
+    const exampleRow = ws.getRow(2)
+    COLUMNS.forEach((col, ci) => {
+      const cell = exampleRow.getCell(ci + 1)
+      cell.value = col.example
+      cell.font = { italic: true, color: { argb: "FF9CA3AF" } }
+    })
+
+    // Per-cell data validation: every entry row in every dropdown column gets a
+    // real Excel dropdown that references the hidden Options sheet.
+    dropdownCols.forEach((col) => {
+      const mainIdx = COLUMNS.findIndex((c) => c.key === col.key)
+      const optIdx = dropdownCols.findIndex((c) => c.key === col.key)
+      const optCol = colLetter(optIdx)
+      const count = col.dropdown!.length
+      const formula = `Options!$${optCol}$2:$${optCol}$${count + 1}`
+      for (let r = FIRST_DATA_ROW; r <= LAST_DATA_ROW; r++) {
+        ws.getCell(`${colLetter(mainIdx)}${r}`).dataValidation = {
+          type: "list",
+          allowBlank: true,
+          formulae: [formula],
+          showErrorMessage: true,
+          errorStyle: "stop",
+          errorTitle: "Invalid value",
+          error: "Please pick a value from the dropdown list.",
+        }
+      }
+    })
+
+    // ── Visible "Allowed Values" guide sheet ─────────────────────────────────
+    const guideWs = wb.addWorksheet("Allowed Values")
+    guideWs.columns = [
+      { header: "Column", key: "c", width: 28 },
+      { header: "Type", key: "t", width: 24 },
+      { header: "Allowed Values (choose one)", key: "v", width: 80 },
+    ]
+    guideWs.getRow(1).font = { bold: true }
+    dropdownCols.forEach((c) => guideWs.addRow({ c: c.label, t: "Dropdown (Select)", v: c.dropdown!.join(", ") }))
+    guideWs.addRow({ c: "Language 1–4", t: "Dropdown (Select)", v: "Pick a language in each column to record multiple languages" })
+    guideWs.addRow({ c: "Skill 1–2", t: "Dropdown (Select)", v: "Pick a skill in each column to record multiple skills" })
+    guideWs.addRow({ c: "Date Joined", t: "Date", v: "Format: YYYY-MM-DD (e.g., 2024-01-15)" })
+
+    // ── Write and trigger browser download ───────────────────────────────────
+    const buf = await wb.xlsx.writeBuffer()
     const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement("a")
@@ -360,7 +398,7 @@ export default function GuardsPage() {
 
   const filtered = guards.filter((g) => {
     const q = searchQuery.toLowerCase()
-    const matchSearch = `${g.first_name} ${g.last_name} ${g.email || ""} ${g.phone || ""} ${g.id_number || ""}`.toLowerCase().includes(q)
+    const matchSearch = `${g.first_name} ${g.last_name} ${g.guard_code || ""} ${g.email || ""} ${g.phone || ""} ${g.id_number || ""}`.toLowerCase().includes(q)
     const matchStatus = statusFilter === "all" || g.status === statusFilter
     return matchSearch && matchStatus
   })
@@ -406,7 +444,14 @@ export default function GuardsPage() {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>ID Number</Label><Input value={formData.id_number} onChange={(e) => setFormData({ ...formData, id_number: e.target.value })} placeholder="ID Number" /></div>
+        <div className="space-y-2"><Label>Guard Code</Label><Input value={formData.guard_code} onChange={(e) => setFormData({ ...formData, guard_code: e.target.value })} placeholder="Guard Code (e.g., GRD001)" /></div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>Date Joined</Label><Input type="date" value={formData.date_joined} onChange={(e) => setFormData({ ...formData, date_joined: e.target.value })} /></div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2"><Label>Bank Name</Label><Input value={formData.bank_name} onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })} placeholder="e.g., Bank of Kigali" /></div>
+        <div className="space-y-2"><Label>Account Number (A/C)</Label><Input value={formData.account_number} onChange={(e) => setFormData({ ...formData, account_number: e.target.value })} placeholder="Account Number" /></div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>Email</Label><Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} /></div>
@@ -602,9 +647,11 @@ export default function GuardsPage() {
                     <Checkbox checked={filtered.length > 0 && filtered.every((g) => selectedIds.has(g.id))} onCheckedChange={() => selectAllFiltered()} />
                   </TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead>Guard Code</TableHead>
                   <TableHead>ID Number</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Phase</TableHead>
+                  <TableHead>Date Joined</TableHead>
                   <TableHead>Leave Balance</TableHead>
                   <TableHead>Files</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -612,7 +659,7 @@ export default function GuardsPage() {
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="h-24 text-center">No guards found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="h-24 text-center">No guards found.</TableCell></TableRow>
                 ) : (filtered.slice(0, showAll ? filtered.length : 3)).map((guard) => {
                   const badge = getStatusBadge(guard.status)
                   const leaveRemaining = (guard.annual_leave_days || 21) - (guard.leave_days_used || 0)
@@ -624,12 +671,16 @@ export default function GuardsPage() {
                   <div className="font-medium">{guard.first_name} {guard.last_name}</div>
                   <div className="text-xs text-muted-foreground">{guard.guard_title || guard.title || "Security Guard"}</div>
                 </TableCell>
+                      <TableCell className="font-mono text-sm font-semibold">{guard.guard_code || "-"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{guard.id_number || "-"}</TableCell>
                       <TableCell>
                         <div className="text-sm">{guard.phone || "-"}</div>
                         {guard.email && <div className="text-xs text-muted-foreground">{guard.email}</div>}
                       </TableCell>
                       <TableCell><Badge variant="outline" className={badge.color}>{badge.label}</Badge></TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {guard.date_joined ? String(guard.date_joined).slice(0, 10) : "-"}
+                      </TableCell>
                       <TableCell>
                         <span className={`text-sm font-medium ${leaveRemaining <= 3 ? "text-red-600" : ""}`}>{leaveRemaining}</span>
                         <span className="text-xs text-muted-foreground"> / {guard.annual_leave_days || 21}d</span>
@@ -762,8 +813,8 @@ export default function GuardsPage() {
             </div>
             <div className="text-xs text-muted-foreground space-y-1 bg-muted/40 rounded p-3">
               <p className="font-medium">Required columns: <code>first_name</code>, <code>last_name</code></p>
-              <p>All other columns match the Add Guard form: email, phone, id_number, date_joined, title, guard_title, gender, education_level, discipline, languages_spoken, special_skills, maternity_status, status, annual_leave_days</p>
-              <p className="text-amber-700">For multi-value fields (languages_spoken, special_skills) separate values with a pipe: <code>English|Kinyarwanda</code></p>
+              <p>All other columns match the Add Guard form: email, phone, id_number, date_joined, bank_name, account_number, title, guard_title, gender, education_level, discipline, maternity_status, status, annual_leave_days</p>
+              <p className="text-amber-700">For multiple languages or skills, pick a value from the dropdown in each numbered column (Language 1–4, Skill 1–2).</p>
             </div>
             {importResult && (
               <div className="space-y-2">
