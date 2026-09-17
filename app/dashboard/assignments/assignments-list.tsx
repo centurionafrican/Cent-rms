@@ -222,7 +222,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
     gender: "",
     level: "",
     discipline: "",
-    language: "",
+    languages: [],
     specialSkills: "",
     maternalStatus: "",
   })
@@ -1071,7 +1071,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                   <Alert className="mb-4">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      {bulkResult}
+                      Successfully assigned {bulkResult.assigned} of {bulkResult.total} guard{bulkResult.total === 1 ? "" : "s"}.
                     </AlertDescription>
                   </Alert>
                   <Button onClick={() => setIsBulkDialogOpen(false)} className="w-full">
