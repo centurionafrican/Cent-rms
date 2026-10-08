@@ -196,6 +196,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
 
   const [isRotationDialogOpen, setIsRotationDialogOpen] = useState(false)
   const [rotationDate, setRotationDate] = useState(getNextThursday())
+  const [rotationSiteId, setRotationSiteId] = useState("all")
   const [rotationLoading, setRotationLoading] = useState(false)
 
   // Bulk assignment state
@@ -762,7 +763,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
       const res = await fetch("/api/assignments/rotate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: rotationDate }),
+        body: JSON.stringify({ date: rotationDate, site_id: rotationSiteId === "all" ? null : Number(rotationSiteId) }),
       })
 
       if (res.ok) {
@@ -910,8 +911,20 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                       <li>Guards on <strong className="text-foreground">Day Shift</strong> will be moved to <strong className="text-foreground">Night Shift</strong></li>
                       <li>Guards on <strong className="text-foreground">Night Shift</strong> will be moved to <strong className="text-foreground">Day Shift</strong></li>
                     </ul>
-                    <div className="pt-2">
-                      <Label className="text-foreground">Rotation Date</Label>
+                    <div className="pt-2 space-y-3">
+                      <div>
+                        <Label className="text-foreground">Site</Label>
+                        <Select value={rotationSiteId} onValueChange={setRotationSiteId}>
+                          <SelectTrigger className="mt-1"><SelectValue placeholder="All sites" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All sites</SelectItem>
+                            {sites.map((site) => <SelectItem key={site.id} value={String(site.id)}>{site.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <span className="text-xs text-muted-foreground mt-1 block">Choose a site when its rotation day differs from other sites.</span>
+                      </div>
+                      <div>
+                        <Label className="text-foreground">Rotation Date</Label>
                       <Input
                         type="date"
                         value={rotationDate}
@@ -921,9 +934,10 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                       <span className="text-xs text-muted-foreground mt-1 block">
                         Next Thursday: {getNextThursday()}
                       </span>
+                      </div>
                     </div>
                   </div>
-                </AlertDialogDescription>
+                  </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -1113,7 +1127,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
           {/* Manual Bulk Assignment Dialog */}
           <Dialog open={isManualBulkDialogOpen} onOpenChange={setIsManualBulkDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:font-bold transition-all">
+              <Button variant="outline" className="border-border text-foreground hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:font-bold transition-all">
                 <Users className="mr-2 h-4 w-4" />
                 Assign Existing Guards
               </Button>
