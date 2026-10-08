@@ -5,7 +5,12 @@ import { getSession } from "@/lib/auth"
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { date } = body
+    const { date, site_id } = body
+    const siteId = site_id ? Number(site_id) : null
+
+    if (site_id !== null && site_id !== undefined && !Number.isInteger(siteId)) {
+      return NextResponse.json({ error: "Invalid site" }, { status: 400 })
+    }
 
     if (!date) {
       return NextResponse.json({ error: "Date is required" }, { status: 400 })
@@ -14,7 +19,8 @@ export async function POST(request: Request) {
     // Get all shifts with their types
     const shifts = await sql`
       SELECT id, name, shift_type FROM shifts WHERE is_active = true
-    `
+    ` as unknown as Array<{ id: number; name: string; shift_type: string }>
+
 
     const dayShift = shifts.find(s => s.shift_type === 'day' || s.name.toLowerCase().includes('day'))
     const nightShift = shifts.find(s => s.shift_type === 'night' || s.name.toLowerCase().includes('night'))
@@ -28,7 +34,8 @@ export async function POST(request: Request) {
       SELECT id, guard_id, site_id, shift_id
       FROM assignments 
       WHERE date = ${date}
-    `
+      ${siteId ? sql`AND site_id = ${siteId}` : sql``}
+    ` as unknown as Array<{ id: number; guard_id: number; site_id: number; shift_id: number }>
 
     let rotatedCount = 0
 
@@ -52,8 +59,9 @@ export async function POST(request: Request) {
           guard_id, site_id, shift_id
         FROM assignments 
         WHERE date < ${date}
+        ${siteId ? sql`AND site_id = ${siteId}` : sql``}
         ORDER BY guard_id, site_id, date DESC
-      `
+      ` as unknown as Array<{ guard_id: number; site_id: number; shift_id: number }>
 
       if (recentAssignments.length === 0) {
         return NextResponse.json({ error: "No assignments found to rotate" }, { status: 400 })
