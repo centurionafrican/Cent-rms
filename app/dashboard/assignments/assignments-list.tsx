@@ -33,7 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Plus, CalendarCheck, Search, Edit, Trash2, UserPlus, RefreshCw, AlertCircle, List, CalendarDays, ChevronLeft, ChevronRight, Check, X, Sun, Moon, Zap, Calendar } from "lucide-react"
+import { Plus, CalendarCheck, Search, Edit, Trash2, UserPlus, RefreshCw, AlertCircle, List, CalendarDays, ChevronLeft, ChevronRight, Check, X, Sun, Moon, Zap, Calendar, Users } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -200,6 +200,9 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
 
   // Bulk assignment state
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false)
+  const [isManualBulkDialogOpen, setIsManualBulkDialogOpen] = useState(false)
+  const [manualSelectedGuardIds, setManualSelectedGuardIds] = useState<number[]>([])
+  const [manualLoading, setManualLoading] = useState(false)
   const [bulkLoading, setBulkLoading] = useState(false)
   const [bulkData, setBulkData] = useState({
     site_id: "",
@@ -384,7 +387,10 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
       site_id: "",
       shift_id: "",
       date: new Date().toISOString().split("T")[0],
+      date_from: new Date().toISOString().split("T")[0],
+      date_to: new Date().toISOString().split("T")[0],
       notes: "",
+      position: "",
     })
   }
 
@@ -778,6 +784,39 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
     }
   }
 
+  async function handleManualBulkAssign() {
+    if (!bulkData.site_id || !bulkData.shift_id || !bulkData.date_from || manualSelectedGuardIds.length === 0) return
+    setManualLoading(true)
+    try {
+      const res = await fetch("/api/assignments/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          site_id: Number(bulkData.site_id),
+          shift_id: Number(bulkData.shift_id),
+          date_from: bulkData.date_from,
+          date_to: bulkData.date_to || bulkData.date_from,
+          guard_ids: manualSelectedGuardIds,
+          auto_assign: false,
+          position: bulkData.position || null,
+        }),
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || "Unable to create assignments")
+      alert(result.message || `Created ${result.created || 0} assignments.`)
+      const data = await fetch("/api/assignments").then((response) => response.json())
+      setAssignments(data.assignments || [])
+      setManualSelectedGuardIds([])
+      setIsManualBulkDialogOpen(false)
+      router.refresh()
+    } catch (error) {
+      console.error("Failed to create manual bulk assignments:", error)
+      alert(error instanceof Error ? error.message : "Failed to create assignments.")
+    } finally {
+      setManualLoading(false)
+    }
+  }
+
   async function handleBulkAssign() {
     if (!bulkData.site_id || !bulkData.shift_id || !bulkData.date_from) return
 
@@ -1067,6 +1106,58 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                   {loading ? "Creating..." : "Create Assignment"}
                 </Button>
               </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Manual Bulk Assignment Dialog */}
+          <Dialog open={isManualBulkDialogOpen} onOpenChange={setIsManualBulkDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                <Users className="mr-2 h-4 w-4" />
+                Assign Existing Guards
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[560px] flex flex-col max-h-[90vh]">
+              <DialogHeader>
+                <DialogTitle>Assign Existing Guards</DialogTitle>
+                <DialogDescription>Choose several guards and assign them to the selected site and shift.</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label>Site *</Label>
+                    <Select value={bulkData.site_id} onValueChange={handleBulkSiteSelection}>
+                      <SelectTrigger><SelectValue placeholder="Select site" /></SelectTrigger>
+                      <SelectContent>{sites.map((site) => <SelectItem key={site.id} value={String(site.id)}>{site.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Shift *</Label>
+                    <Select value={bulkData.shift_id} onValueChange={(value) => setBulkData({ ...bulkData, shift_id: value })}>
+                      <SelectTrigger><SelectValue placeholder="Select shift" /></SelectTrigger>
+                      <SelectContent>{shifts.map((shift) => <SelectItem key={shift.id} value={String(shift.id)}>{shift.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2"><Label>From Date *</Label><Input type="date" value={bulkData.date_from} onChange={(event) => setBulkData({ ...bulkData, date_from: event.target.value })} /></div>
+                  <div className="grid gap-2"><Label>To Date</Label><Input type="date" value={bulkData.date_to} onChange={(event) => setBulkData({ ...bulkData, date_to: event.target.value })} /></div>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Position at Site</Label>
+                  <Select value={bulkData.position || "none"} onValueChange={(value) => setBulkData({ ...bulkData, position: value === "none" ? "" : value })}>
+                    <SelectTrigger><SelectValue placeholder="Select position" /></SelectTrigger>
+                    <SelectContent><SelectItem value="none">Not specified</SelectItem>{bulkSitePosts.map((post) => <SelectItem key={post.id} value={post.name}>{post.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="rounded-md border p-3">
+                  <div className="mb-3 flex items-center justify-between"><Label>Select Guards ({manualSelectedGuardIds.length} selected)</Label><Button type="button" variant="ghost" size="sm" onClick={() => setManualSelectedGuardIds(manualSelectedGuardIds.length === guards.length ? [] : guards.map((guard) => guard.id))}>{manualSelectedGuardIds.length === guards.length ? "Clear all" : "Select all"}</Button></div>
+                  <div className="max-h-56 space-y-2 overflow-y-auto">
+                    {guards.map((guard) => <label key={guard.id} className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-muted"><Checkbox checked={manualSelectedGuardIds.includes(guard.id)} onCheckedChange={(checked) => setManualSelectedGuardIds((current) => checked ? [...new Set([...current, guard.id])] : current.filter((id) => id !== guard.id))} /><span className="text-sm">{guard.first_name} {guard.last_name}{guard.guard_title ? ` — ${guard.guard_title}` : ""}</span></label>)}
+                  </div>
+                </div>
+              </div>
+              <DialogFooter><Button variant="outline" onClick={() => setIsManualBulkDialogOpen(false)}>Cancel</Button><Button onClick={handleManualBulkAssign} disabled={manualLoading || !bulkData.site_id || !bulkData.shift_id || !bulkData.date_from || manualSelectedGuardIds.length === 0}>{manualLoading ? "Assigning..." : `Assign ${manualSelectedGuardIds.length} Guard${manualSelectedGuardIds.length === 1 ? "" : "s"}`}</Button></DialogFooter>
             </DialogContent>
           </Dialog>
 
