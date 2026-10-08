@@ -202,6 +202,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false)
   const [isManualBulkDialogOpen, setIsManualBulkDialogOpen] = useState(false)
   const [manualSelectedGuardIds, setManualSelectedGuardIds] = useState<number[]>([])
+  const [manualGuardSearch, setManualGuardSearch] = useState("")
   const [manualLoading, setManualLoading] = useState(false)
   const [bulkLoading, setBulkLoading] = useState(false)
   const [bulkData, setBulkData] = useState({
@@ -1112,7 +1113,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
           {/* Manual Bulk Assignment Dialog */}
           <Dialog open={isManualBulkDialogOpen} onOpenChange={setIsManualBulkDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+              <Button variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:font-bold transition-all">
                 <Users className="mr-2 h-4 w-4" />
                 Assign Existing Guards
               </Button>
@@ -1152,8 +1153,21 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                 </div>
                 <div className="rounded-md border p-3">
                   <div className="mb-3 flex items-center justify-between"><Label>Select Guards ({manualSelectedGuardIds.length} selected)</Label><Button type="button" variant="ghost" size="sm" onClick={() => setManualSelectedGuardIds(manualSelectedGuardIds.length === guards.length ? [] : guards.map((guard) => guard.id))}>{manualSelectedGuardIds.length === guards.length ? "Clear all" : "Select all"}</Button></div>
+                  <Input
+                    value={manualGuardSearch}
+                    onChange={(event) => setManualGuardSearch(event.target.value)}
+                    placeholder="Search guards by name, ID, or title..."
+                    aria-label="Search guards"
+                    className="mb-3"
+                  />
                   <div className="max-h-56 space-y-2 overflow-y-auto">
-                    {guards.map((guard) => <label key={guard.id} className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-muted"><Checkbox checked={manualSelectedGuardIds.includes(guard.id)} onCheckedChange={(checked) => setManualSelectedGuardIds((current) => checked ? [...new Set([...current, guard.id])] : current.filter((id) => id !== guard.id))} /><span className="text-sm">{guard.first_name} {guard.last_name}{guard.guard_title ? ` — ${guard.guard_title}` : ""}</span></label>)}
+                    {guards
+                      .filter((guard) => {
+                        const query = manualGuardSearch.trim().toLowerCase()
+                        if (!query) return true
+                        return `${guard.first_name} ${guard.last_name} ${guard.id} ${guard.guard_title || ""}`.toLowerCase().includes(query)
+                      })
+                      .map((guard) => <label key={guard.id} className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-muted"><Checkbox checked={manualSelectedGuardIds.includes(guard.id)} onCheckedChange={(checked) => setManualSelectedGuardIds((current) => checked ? [...new Set([...current, guard.id])] : current.filter((id) => id !== guard.id))} /><span className="text-sm">{guard.first_name} {guard.last_name}{guard.guard_title ? ` — ${guard.guard_title}` : ""}</span></label>)}
                   </div>
                 </div>
               </div>
