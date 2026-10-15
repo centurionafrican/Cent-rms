@@ -5,8 +5,9 @@ import { getSession } from "@/lib/auth"
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { date, site_id } = body
+    const { date, site_id, province } = body
     const siteId = site_id ? Number(site_id) : null
+    const provinceName = province ? String(province).toUpperCase() : null
 
     if (site_id !== null && site_id !== undefined && !Number.isInteger(siteId)) {
       return NextResponse.json({ error: "Invalid site" }, { status: 400 })
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
       FROM assignments 
       WHERE date = ${date}
       ${siteId ? sql`AND site_id = ${siteId}` : sql``}
+      ${provinceName ? sql`AND site_id IN (SELECT id FROM sites WHERE UPPER(province) = ${provinceName})` : sql``}
     ` as unknown as Array<{ id: number; guard_id: number; site_id: number; shift_id: number }>
 
     let rotatedCount = 0
@@ -60,6 +62,7 @@ export async function POST(request: Request) {
         FROM assignments 
         WHERE date < ${date}
         ${siteId ? sql`AND site_id = ${siteId}` : sql``}
+        ${provinceName ? sql`AND site_id IN (SELECT id FROM sites WHERE UPPER(province) = ${provinceName})` : sql``}
         ORDER BY guard_id, site_id, date DESC
       ` as unknown as Array<{ guard_id: number; site_id: number; shift_id: number }>
 

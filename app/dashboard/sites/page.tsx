@@ -25,6 +25,7 @@ type Client = { id: number; name: string }
 type Site = {
   id: number
   name: string
+  province: string | null
   district: string | null
   sector: string | null
   contact_person: string | null
@@ -73,7 +74,7 @@ export default function SitesPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [newPost, setNewPost] = useState("")
   const [formData, setFormData] = useState({
-    name: "", district: "", sector: "", contact_person: "", contact_phone: "",
+    name: "", province: "", district: "", sector: "", contact_person: "", contact_phone: "",
     client_id: "", site_status: "active", guards_needed: "1",
   })
   const [saving, setSaving] = useState(false)
@@ -164,7 +165,7 @@ export default function SitesPage() {
   }
 
   function resetForm() {
-    setFormData({ name: "", district: "", sector: "", contact_person: "", contact_phone: "", client_id: "", site_status: "active", guards_needed: "1" })
+    setFormData({ name: "", province: "", district: "", sector: "", contact_person: "", contact_phone: "", client_id: "", site_status: "active", guards_needed: "1" })
     setPosts([])
     setNewPost("")
   }
@@ -172,7 +173,7 @@ export default function SitesPage() {
   async function openEdit(site: Site) {
     setSelectedSite(site)
     setFormData({
-      name: site.name, district: site.district || "", sector: site.sector || "",
+      name: site.name, province: site.province || "", district: site.district || "", sector: site.sector || "",
       contact_person: site.contact_person || "",
       contact_phone: site.contact_phone || "", client_id: site.client_id ? String(site.client_id) : "",
       site_status: site.site_status || "active", guards_needed: String(site.guards_needed || 1),
@@ -261,8 +262,12 @@ export default function SitesPage() {
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>District</Label>
+          <div className="space-y-2">
+            <Label>Province</Label>
+            <Input value={formData.province} onChange={(e) => setFormData({ ...formData, province: e.target.value })} placeholder="e.g., Kigali City" />
+          </div>
+          <div className="space-y-2">
+            <Label>District</Label>
           <Input value={formData.district} onChange={(e) => setFormData({ ...formData, district: e.target.value })} placeholder="e.g., Gasabo" />
         </div>
         <div className="space-y-2">
@@ -386,8 +391,9 @@ export default function SitesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Site Name</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>District</TableHead>
+  <TableHead>Client</TableHead>
+  <TableHead>Province</TableHead>
+  <TableHead>District</TableHead>
                   <TableHead>Sector</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Status</TableHead>
@@ -403,8 +409,9 @@ export default function SitesPage() {
                   return (
                     <TableRow key={site.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown(site)}>
                       <TableCell className="font-medium">{site.name}</TableCell>
-                      <TableCell>{site.client_name || <span className="text-muted-foreground">-</span>}</TableCell>
-                      <TableCell>{site.district || "-"}</TableCell>
+  <TableCell>{site.client_name || <span className="text-muted-foreground">-</span>}</TableCell>
+  <TableCell>{site.province || "-"}</TableCell>
+  <TableCell>{site.district || "-"}</TableCell>
                       <TableCell>{site.sector || "-"}</TableCell>
                       <TableCell>
                         <div className="text-sm">

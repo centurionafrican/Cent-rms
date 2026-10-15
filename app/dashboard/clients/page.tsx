@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Search, Edit, Trash2, Building2, MapPin, Download, Users, Mail, Phone, ChevronRight } from "lucide-react"
 import { ContactsManager } from "@/components/contacts-manager"
@@ -53,7 +54,7 @@ export default function ClientsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [bulkDeleting, setBulkDeleting] = useState(false)
   const [formData, setFormData] = useState({
-    name: "", contact_person: "", contact_email: "", contact_phone: "", district: "", sector: "", notes: "",
+    name: "", contact_person: "", contact_email: "", contact_phone: "", district: "", sector: "", notes: "", is_active: true,
   })
 
   useEffect(() => { fetchClients() }, [])
@@ -93,7 +94,7 @@ export default function ClientsPage() {
   }
 
   function resetForm() {
-    setFormData({ name: "", contact_person: "", contact_email: "", contact_phone: "", district: "", sector: "", notes: "" })
+    setFormData({ name: "", contact_person: "", contact_email: "", contact_phone: "", district: "", sector: "", notes: "", is_active: true })
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -277,7 +278,7 @@ export default function ClientsPage() {
                       <Button variant="outline" size="sm" onClick={(e) => {
                         e.stopPropagation()
                         setEditingClient(client)
-                        setFormData({ name: client.name, contact_person: client.contact_person || "", contact_email: client.contact_email || "", contact_phone: client.contact_phone || "", district: client.district || "", sector: client.sector || "", notes: client.notes || "" })
+                        setFormData({ name: client.name, contact_person: client.contact_person || "", contact_email: client.contact_email || "", contact_phone: client.contact_phone || "", district: client.district || "", sector: client.sector || "", notes: client.notes || "", is_active: client.is_active })
                       }}><Edit className="h-3 w-3" /></Button>
                       <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleDelete(client.id) }} className="text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" /></Button>
                     </div>
@@ -398,7 +399,7 @@ export default function ClientsPage() {
               setViewingClient(null)
               setClientSites([])
               setEditingClient(viewingClient)
-              setFormData({ name: viewingClient.name, contact_person: viewingClient.contact_person || "", contact_email: viewingClient.contact_email || "", contact_phone: viewingClient.contact_phone || "", district: viewingClient.district || "", sector: viewingClient.sector || "", notes: viewingClient.notes || "" })
+              setFormData({ name: viewingClient.name, contact_person: viewingClient.contact_person || "", contact_email: viewingClient.contact_email || "", contact_phone: viewingClient.contact_phone || "", district: viewingClient.district || "", sector: viewingClient.sector || "", notes: viewingClient.notes || "", is_active: viewingClient.is_active })
             }}>
               <Edit className="h-4 w-4 mr-2" />Edit Client
             </Button>
@@ -439,6 +440,13 @@ export default function ClientsPage() {
               <div className="space-y-2">
                 <Label>Sector</Label>
                 <Input value={formData.sector} onChange={(e) => setFormData({ ...formData, sector: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={formData.is_active ? "active" : "inactive"} onValueChange={(value) => setFormData({ ...formData, is_active: value === "active" })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent>
+                </Select>
               </div>
               <div className="col-span-2 space-y-2">
                 <Label>Notes</Label>
@@ -483,6 +491,13 @@ export default function ClientsPage() {
               <div className="space-y-2">
                 <Label>Sector</Label>
                 <Input value={formData.sector} onChange={(e) => setFormData({ ...formData, sector: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={formData.is_active ? "active" : "inactive"} onValueChange={(value) => setFormData({ ...formData, is_active: value === "active" })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent>
+                </Select>
               </div>
               <div className="col-span-2 space-y-2">
                 <Label>Notes</Label>

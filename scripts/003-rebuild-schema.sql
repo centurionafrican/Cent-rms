@@ -28,6 +28,7 @@ CREATE TABLE users (
 CREATE TABLE sites (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
+  province VARCHAR(100),
   address TEXT,
   contact_person VARCHAR(255),
   contact_phone VARCHAR(50),
