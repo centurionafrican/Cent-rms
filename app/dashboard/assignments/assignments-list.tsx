@@ -196,7 +196,6 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
 
   const [isRotationDialogOpen, setIsRotationDialogOpen] = useState(false)
   const [rotationDate, setRotationDate] = useState(getNextThursday())
-  const [rotationSiteId, setRotationSiteId] = useState("all")
   const [rotationProvince, setRotationProvince] = useState("all")
   const [rotationProvinceDays, setRotationProvinceDays] = useState<Record<string, string[]>>({
     EAST: ["Thursday"], WEST: ["Thursday"], NORTH: ["Thursday"], SOUTH: ["Thursday"],
@@ -769,7 +768,6 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: rotationDate,
-          site_id: rotationSiteId === "all" ? null : Number(rotationSiteId),
           province: rotationProvince === "all" ? null : rotationProvince,
         }),
       })
@@ -929,7 +927,6 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                             {['EAST', 'WEST', 'NORTH', 'SOUTH'].map((province) => <SelectItem key={province} value={province}>{province}</SelectItem>)}
                           </SelectContent>
                         </Select>
-                        <span className="text-xs text-muted-foreground mt-1 block">Rotation will apply only to sites in the selected province.</span>
                       </div>
                       <div>
                         <Label className="text-foreground">Rotation days by province</Label>
@@ -949,17 +946,6 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                         </div>
                       </div>
                       <div>
-                        <Label className="text-foreground">Site</Label>
-                        <Select value={rotationSiteId} onValueChange={setRotationSiteId}>
-                          <SelectTrigger className="mt-1"><SelectValue placeholder="All sites" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All sites</SelectItem>
-                            {sites.map((site) => <SelectItem key={site.id} value={String(site.id)}>{site.name}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                        <span className="text-xs text-muted-foreground mt-1 block">Choose a site when its rotation day differs from other sites.</span>
-                      </div>
-                      <div>
                         <Label className="text-foreground">Rotation Date</Label>
                       <Input
                         type="date"
@@ -967,9 +953,6 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                         onChange={(e) => setRotationDate(e.target.value)}
                         className="mt-1"
                       />
-                      <span className="text-xs text-muted-foreground mt-1 block">
-                        Next Thursday: {getNextThursday()}
-                      </span>
                       </div>
                     </div>
                   </div>

@@ -19,7 +19,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params
     const body = await request.json()
-    const { name, contact_person, contact_email, contact_phone, district, sector, notes } = body
+    const { name, contact_person, contact_email, contact_phone, district, sector, notes, is_active } = body
 
     if (!name) {
       return NextResponse.json({ error: "Client name is required" }, { status: 400 })
@@ -33,8 +33,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         contact_phone = ${contact_phone || null},
         district = ${district || null},
         sector = ${sector || null},
-        notes = ${notes || null},
-        updated_at = NOW()
+  notes = ${notes || null},
+  is_active = ${is_active !== false},
+  updated_at = NOW()
       WHERE id = ${Number(id)}
       RETURNING *
     `
