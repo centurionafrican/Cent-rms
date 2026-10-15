@@ -30,11 +30,12 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { name, district, sector, contact_person, contact_phone, is_active, client_id, site_status, guards_needed, posts } = body
+    const { name, province, district, sector, contact_person, contact_phone, is_active, client_id, site_status, guards_needed, posts } = body
 
     const result = await sql`
       UPDATE sites SET
         name = ${name},
+        province = ${province || null},
         district = ${district || null},
         sector = ${sector || null},
         contact_person = ${contact_person || null},

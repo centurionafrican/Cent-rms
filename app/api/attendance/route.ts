@@ -39,7 +39,9 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { assignment_id, action } = body
 
-    if (!assignment_id || action !== "clock_in") {
+    // Accept both the explicit action payload and the legacy clock-in payload
+    // used by the dashboard controls.
+    if (!assignment_id || (action && action !== "clock_in")) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 })
     }
 
