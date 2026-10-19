@@ -198,7 +198,7 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
   const [rotationDate, setRotationDate] = useState(getNextThursday())
   const [rotationProvince, setRotationProvince] = useState("all")
   const [rotationProvinceDays, setRotationProvinceDays] = useState<Record<string, string[]>>({
-    EAST: ["Thursday"], WEST: ["Thursday"], NORTH: ["Thursday"], SOUTH: ["Thursday"],
+    EASTERN: ["Thursday"], NORTHERN: ["Thursday"], WESTERN: ["Thursday"], SOUTHERN: ["Thursday"], "CITY OF KIGALI": ["Thursday"],
   })
   const [rotationLoading, setRotationLoading] = useState(false)
 
@@ -918,16 +918,6 @@ export function AssignmentsList({ initialAssignments, guards, sites, shifts }: A
                       <li>Guards on <strong className="text-foreground">Night Shift</strong> will be moved to <strong className="text-foreground">Day Shift</strong></li>
                     </ul>
                     <div className="pt-2 space-y-3">
-                      <div>
-                        <Label className="text-foreground">Province</Label>
-                        <Select value={rotationProvince} onValueChange={setRotationProvince}>
-                          <SelectTrigger className="mt-1"><SelectValue placeholder="All provinces" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All provinces</SelectItem>
-                            {['EAST', 'WEST', 'NORTH', 'SOUTH'].map((province) => <SelectItem key={province} value={province}>{province}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
                       <div>
                         <Label className="text-foreground">Rotation days by province</Label>
                         <div className="mt-2 grid grid-cols-2 gap-2">
