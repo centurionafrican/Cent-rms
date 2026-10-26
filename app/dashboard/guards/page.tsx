@@ -134,8 +134,19 @@ export default function GuardsPage() {
         method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...formData, annual_leave_days: Number.parseInt(formData.annual_leave_days) || 21, attachments: JSON.stringify(allAttachments) }),
       })
-      if (res.ok) { setIsEditOpen(false); setSelectedGuard(null); resetForm(); fetchGuards() }
-    } catch (error) { console.error(error) }
+      if (res.ok) {
+        setIsEditOpen(false)
+        setSelectedGuard(null)
+        resetForm()
+        await fetchGuards()
+      } else {
+        const result = await res.json().catch(() => null)
+        alert(result?.error || "Unable to update guard status.")
+      }
+    } catch (error) {
+      console.error("Failed to update guard:", error)
+      alert("Unable to update guard status. Please try again.")
+    }
     finally { setSaving(false) }
   }
 
