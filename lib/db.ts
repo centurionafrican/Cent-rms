@@ -2,14 +2,30 @@ import { neon } from "@neondatabase/serverless"
 
 let _sql: ReturnType<typeof neon> | null = null
 
-export function sql(strings: TemplateStringsArray, ...values: unknown[]) {
+export async function sql(strings: TemplateStringsArray, ...values: unknown[]) {
   if (!_sql) {
     if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL environment variable is not set. Please add it in the Vars section of the sidebar.")
     }
-    _sql = neon(process.env.DATABASE_URL)
+    _sql = neon(process.env.DATABASE_URL, {
+      fetchOptions: { cache: "no-store" },
+    })
   }
-  return _sql(strings, ...values)
+
+  try {
+    return await _sql(strings, ...values)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const isTransientConnectionError = /fetch failed|ETIMEDOUT|ECONNRESET|connection.*closed/i.test(message)
+    if (!isTransientConnectionError) throw error
+
+    // Recreate the Neon client once so a stale serverless connection does not
+    // terminate the RSC request after a transient network failure.
+    _sql = neon(process.env.DATABASE_URL!, {
+      fetchOptions: { cache: "no-store" },
+    })
+    return await _sql(strings, ...values)
+  }
 }
 
 export type User = {

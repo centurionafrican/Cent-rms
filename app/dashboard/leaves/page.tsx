@@ -40,7 +40,7 @@ export default async function LeavesPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Leave Requests</h1>
         <p className="text-muted-foreground">
-          Manage employee leave requests with multi-level approval (Roster Manager → Ops Manager → HR → Co-CEO).
+          Manage employee leave requests.
         </p>
       </div>
 

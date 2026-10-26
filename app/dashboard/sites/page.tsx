@@ -264,7 +264,12 @@ export default function SitesPage() {
       <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Province</Label>
-            <Input value={formData.province} onChange={(e) => setFormData({ ...formData, province: e.target.value })} placeholder="e.g., Kigali City" />
+            <Select value={formData.province} onValueChange={(value) => setFormData({ ...formData, province: value })}>
+              <SelectTrigger><SelectValue placeholder="Select a province" /></SelectTrigger>
+              <SelectContent>
+                {['EASTERN', 'NORTHERN', 'WESTERN', 'SOUTHERN', 'CITY OF KIGALI'].map((province) => <SelectItem key={province} value={province}>{province}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label>District</Label>

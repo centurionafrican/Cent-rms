@@ -2,6 +2,9 @@ import { getSession } from "@/lib/auth"
 import { sql } from "@/lib/db"
 import { AssignmentsList } from "./assignments-list"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 async function getAssignments() {
   const result = await sql`
     SELECT 
