@@ -3,6 +3,9 @@ import { sql } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { ReportsDashboard } from "./reports-dashboard"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 async function getReportData() {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
