@@ -33,7 +33,7 @@ export async function PUT(
     const validStatuses = ["recruitment", "training", "probation", "active", "retired", "quit", "abandon", "resigned", "dismissed", "deceased"]
 
     if (!validStatuses.includes(normalizedStatus)) {
-      return NextResponse.json({ error: "Invalid guard status" }, { status: 400 })
+      return NextResponse.json({ error: `Invalid guard status: ${normalizedStatus || "empty"}` }, { status: 400 })
     }
 
     const result = await sql`

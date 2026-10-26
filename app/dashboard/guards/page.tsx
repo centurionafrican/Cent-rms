@@ -131,10 +131,15 @@ export default function GuardsPage() {
       const existingAttachments = selectedGuard.attachments || []
       const allAttachments = [...existingAttachments, ...pendingFiles]
       const res = await fetch(`/api/guards/${selectedGuard.id}`, {
-        method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, annual_leave_days: Number.parseInt(formData.annual_leave_days) || 21, attachments: JSON.stringify(allAttachments) }),
-      })
-      if (res.ok) {
+  method: "PUT", headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    ...formData,
+    status: String(formData.status).trim().toLowerCase(),
+    annual_leave_days: Number.parseInt(formData.annual_leave_days) || 21,
+    attachments: JSON.stringify(allAttachments),
+  }),
+  })
+  if (res.ok) {
         setIsEditOpen(false)
         setSelectedGuard(null)
         resetForm()
@@ -202,7 +207,7 @@ export default function GuardsPage() {
 
   function openEdit(guard: Guard) {
     setSelectedGuard(guard)
-    setFormData({ first_name: guard.first_name, last_name: guard.last_name, email: guard.email || "", phone: guard.phone || "", guard_code: guard.guard_code || "", title: guard.title || "Security Guard", status: guard.status, id_number: guard.id_number || "", annual_leave_days: String(guard.annual_leave_days || 21), bank_name: guard.bank_name || "", account_number: guard.account_number || "", date_joined: guard.date_joined || "", guard_title: guard.guard_title || "", gender: guard.gender || "", education_level: guard.education_level || "", languages_spoken: guard.languages_spoken || [], discipline: guard.discipline || "Excellent", special_skills: guard.special_skills || [], maternity_status: guard.maternity_status || "Not Applicable" })
+    setFormData({ first_name: guard.first_name, last_name: guard.last_name, email: guard.email || "", phone: guard.phone || "", guard_code: guard.guard_code || "", title: guard.title || "Security Guard", status: String(guard.status || "recruitment").trim().toLowerCase(), id_number: guard.id_number || "", annual_leave_days: String(guard.annual_leave_days || 21), bank_name: guard.bank_name || "", account_number: guard.account_number || "", date_joined: guard.date_joined || "", guard_title: guard.guard_title || "", gender: guard.gender || "", education_level: guard.education_level || "", languages_spoken: guard.languages_spoken || [], discipline: guard.discipline || "Excellent", special_skills: guard.special_skills || [], maternity_status: guard.maternity_status || "Not Applicable" })
     setPendingFiles([])
     setIsEditOpen(true)
   }
