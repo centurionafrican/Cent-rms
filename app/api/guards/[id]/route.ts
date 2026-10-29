@@ -36,6 +36,15 @@ export async function PUT(
       return NextResponse.json({ error: `Invalid guard status: ${normalizedStatus || "empty"}` }, { status: 400 })
     }
 
+    if (guard_code) {
+      const duplicateCode = await sql`
+        SELECT id FROM guards WHERE guard_code = ${String(guard_code).trim()} AND id <> ${id} LIMIT 1
+      `
+      if (duplicateCode.length > 0) {
+        return NextResponse.json({ error: `Guard code ${String(guard_code).trim()} is already assigned to another guard.` }, { status: 409 })
+      }
+    }
+
     const result = await sql`
       UPDATE guards SET
         first_name = ${first_name},
@@ -70,6 +79,9 @@ export async function PUT(
     return NextResponse.json(result[0])
   } catch (error) {
     console.error("Error updating guard:", error)
+    if (error instanceof Error && "code" in error && (error as Error & { code?: string }).code === "23505") {
+      return NextResponse.json({ error: "That guard code is already assigned to another guard." }, { status: 409 })
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
