@@ -28,7 +28,7 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { first_name, last_name, email, phone, address, title, status, id_number, annual_leave_days, date_joined, guard_title, gender, education_level, languages_spoken, discipline, special_skills, maternity_status, bank_name, account_number } = body
+    const { first_name, last_name, email, phone, address, title, status, guard_code, id_number, annual_leave_days, date_joined, guard_title, gender, education_level, languages_spoken, discipline, special_skills, maternity_status, bank_name, account_number } = body
     const normalizedStatus = typeof status === "string" ? status.trim().toLowerCase() : "active"
     const validStatuses = ["recruitment", "training", "probation", "active", "retired", "quit", "abandon", "resigned", "dismissed", "deceased"]
 
@@ -45,6 +45,7 @@ export async function PUT(
         address = ${address || null},
         title = ${title || 'Security Guard'},
         status = ${normalizedStatus},
+        guard_code = ${guard_code || null},
         id_number = ${id_number || null},
         annual_leave_days = ${annual_leave_days || 21},
         date_joined = ${date_joined || null},
