@@ -107,7 +107,7 @@ export default async function DashboardPage() {
         <Card className="border-l-4 border-l-primary">
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
             <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
-              Total Employees
+              Total Guards
             </CardTitle>
             <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
