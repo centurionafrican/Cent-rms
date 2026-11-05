@@ -30,7 +30,7 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { name, province, district, sector, contact_person, contact_phone, is_active, client_id, site_status, guards_needed, posts } = body
+    const { name, province, district, sector, contact_person, contact_phone, is_active, client_id, site_status, guards_needed, arms_needed, posts } = body
 
     const result = await sql`
       UPDATE sites SET
@@ -44,6 +44,7 @@ export async function PUT(
         client_id = ${client_id || null},
         site_status = ${site_status || 'active'},
         guards_needed = ${guards_needed || 1},
+        arms_needed = ${Math.max(0, Number(arms_needed) || 0)},
         updated_at = NOW()
       WHERE id = ${id}
       RETURNING *

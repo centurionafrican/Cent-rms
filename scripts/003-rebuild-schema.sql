@@ -32,6 +32,7 @@ CREATE TABLE sites (
   address TEXT,
   contact_person VARCHAR(255),
   contact_phone VARCHAR(50),
+  arms_needed INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()

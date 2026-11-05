@@ -35,6 +35,8 @@ type Site = {
   client_name: string | null
   site_status: string
   guards_needed: number
+  arms_needed: number
+  posts_available?: number
   created_at: string
   posts?: Post[]
 }
@@ -75,7 +77,7 @@ export default function SitesPage() {
   const [newPost, setNewPost] = useState("")
   const [formData, setFormData] = useState({
     name: "", province: "", district: "", sector: "", contact_person: "", contact_phone: "",
-    client_id: "", site_status: "active", guards_needed: "1",
+    client_id: "", site_status: "active", guards_needed: "1", arms_needed: "0",
   })
   const [saving, setSaving] = useState(false)
 
@@ -119,7 +121,7 @@ export default function SitesPage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData, client_id: formData.client_id ? Number(formData.client_id) : null,
-          guards_needed: Number(formData.guards_needed) || 1, is_active: formData.site_status !== "inactive",
+          guards_needed: Number(formData.guards_needed) || 1, arms_needed: Number(formData.arms_needed) || 0, is_active: formData.site_status !== "inactive",
           posts: posts.length > 0 ? posts : undefined,
         }),
       })
@@ -136,7 +138,7 @@ export default function SitesPage() {
         method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData, client_id: formData.client_id ? Number(formData.client_id) : null,
-          guards_needed: Number(formData.guards_needed) || 1, is_active: formData.site_status !== "inactive",
+          guards_needed: Number(formData.guards_needed) || 1, arms_needed: Number(formData.arms_needed) || 0, is_active: formData.site_status !== "inactive",
           posts: posts.length > 0 ? posts : undefined,
         }),
       })
@@ -176,7 +178,7 @@ export default function SitesPage() {
       name: site.name, province: site.province || "", district: site.district || "", sector: site.sector || "",
       contact_person: site.contact_person || "",
       contact_phone: site.contact_phone || "", client_id: site.client_id ? String(site.client_id) : "",
-      site_status: site.site_status || "active", guards_needed: String(site.guards_needed || 1),
+      site_status: site.site_status || "active", guards_needed: String(site.guards_needed || 1), arms_needed: String(site.arms_needed || 0),
     })
     // Fetch posts for this site
     try {
@@ -306,10 +308,14 @@ export default function SitesPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-2">
-          <Label>Guards Needed</Label>
-          <Input type="number" min="1" value={formData.guards_needed} onChange={(e) => setFormData({ ...formData, guards_needed: e.target.value })} />
-        </div>
+  <div className="space-y-2">
+  <Label>Guards Needed</Label>
+  <Input type="number" min="1" value={formData.guards_needed} onChange={(e) => setFormData({ ...formData, guards_needed: e.target.value })} />
+  </div>
+  <div className="space-y-2">
+  <Label>Arms Needed</Label>
+  <Input type="number" min="0" step="1" value={formData.arms_needed} onChange={(e) => setFormData({ ...formData, arms_needed: e.target.value })} />
+  </div>
       </div>
       <div className="space-y-2">
         <Label>Site Posts (e.g., Gate, Main Entrance, Back Entrance)</Label>
@@ -318,8 +324,8 @@ export default function SitesPage() {
           <Button type="button" onClick={addPost} variant="outline">Add Post</Button>
         </div>
         {posts.length > 0 && (
-          <div className="mt-2 space-y-1">
-            {posts.map((post, idx) => (
+  <div className="mt-2 max-h-48 space-y-1 overflow-y-auto rounded-md border p-1">
+  {posts.map((post, idx) => (
               <div key={post.id || `post-${idx}`} className="flex items-center justify-between bg-muted p-2 rounded text-sm">
                 <span>{post.name}</span>
                 <Button type="button" variant="ghost" size="icon" onClick={() => removePost(idx)} className="h-6 w-6">
@@ -402,13 +408,15 @@ export default function SitesPage() {
                   <TableHead>Sector</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Guards Needed</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+ <TableHead>Guards Needed</TableHead>
+ <TableHead>Posts Available</TableHead>
+ <TableHead>Arms Needed</TableHead>
+ <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {displayedSites.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="h-24 text-center">No sites found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="h-24 text-center">No sites found.</TableCell></TableRow>
                 ) : displayedSites.map((site) => {
                   const statusOpt = SITE_STATUS_OPTIONS.find((s) => s.value === site.site_status)
                   return (
@@ -428,6 +436,8 @@ export default function SitesPage() {
                         <Badge variant="outline" className={statusOpt?.color || ""}>{statusOpt?.label || site.site_status}</Badge>
                       </TableCell>
                       <TableCell><Badge variant="outline">{site.guards_needed || 1}</Badge></TableCell>
+                      <TableCell><Badge variant="outline">{site.posts_available || 0}</Badge></TableCell>
+                      <TableCell><Badge variant="outline">{site.arms_needed || 0}</Badge></TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="icon" onClick={() => openEdit(site)}><Pencil className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" onClick={() => { setSelectedSite(site); setIsDeleteOpen(true) }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
