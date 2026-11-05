@@ -167,7 +167,7 @@ export default function SitesPage() {
   }
 
   function resetForm() {
-    setFormData({ name: "", province: "", district: "", sector: "", contact_person: "", contact_phone: "", client_id: "", site_status: "active", guards_needed: "1" })
+    setFormData({ name: "", province: "", district: "", sector: "", contact_person: "", contact_phone: "", client_id: "", site_status: "active", guards_needed: "1", arms_needed: "0" })
     setPosts([])
     setNewPost("")
   }
