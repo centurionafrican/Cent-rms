@@ -5,7 +5,8 @@ import { getSession } from "@/lib/auth"
 export async function GET() {
   try {
     const sites = await sql`
-      SELECT s.*, c.name as client_name
+      SELECT s.*, c.name as client_name,
+        (SELECT COUNT(*)::int FROM posts p WHERE p.site_id = s.id AND COALESCE(p.status, 'active') = 'active') AS posts_available
       FROM sites s
       LEFT JOIN clients c ON c.id = s.client_id
       ORDER BY s.name
@@ -20,15 +21,15 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, province, district, sector, contact_person, contact_phone, is_active, client_id, site_status, guards_needed, posts } = body
+    const { name, province, district, sector, contact_person, contact_phone, is_active, client_id, site_status, guards_needed, arms_needed, posts } = body
 
     if (!name) {
       return NextResponse.json({ error: "Site name is required" }, { status: 400 })
     }
 
     const result = await sql`
-      INSERT INTO sites (name, province, district, sector, contact_person, contact_phone, is_active, client_id, site_status, guards_needed)
-      VALUES (${name}, ${province || null}, ${district || null}, ${sector || null}, ${contact_person || null}, ${contact_phone || null}, ${is_active !== false}, ${client_id || null}, ${site_status || 'active'}, ${guards_needed || 1})
+      INSERT INTO sites (name, province, district, sector, contact_person, contact_phone, is_active, client_id, site_status, guards_needed, arms_needed)
+      VALUES (${name}, ${province || null}, ${district || null}, ${sector || null}, ${contact_person || null}, ${contact_phone || null}, ${is_active !== false}, ${client_id || null}, ${site_status || 'active'}, ${guards_needed || 1}, ${Math.max(0, Number(arms_needed) || 0)})
       RETURNING *
     `
 

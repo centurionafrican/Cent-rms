@@ -26,6 +26,8 @@ async function getDashboardStats() {
     // Fetch all counts in simple, direct queries
     const guardsResult = await sql`SELECT COUNT(*) as count FROM guards`
     const totalGuards = Number(guardsResult[0]?.count || 0)
+    const activeGuardsResult = await sql`SELECT COUNT(*) as count FROM guards WHERE LOWER(status) = 'active'`
+    const activeGuards = Number(activeGuardsResult[0]?.count || 0)
 
     const sitesResult = await sql`SELECT COUNT(*) as count FROM sites`
     const totalSites = Number(sitesResult[0]?.count || 0)
@@ -50,6 +52,7 @@ async function getDashboardStats() {
 
     return {
       totalGuards,
+      activeGuards,
       activeSites: totalSites,
       totalShifts,
       pendingAssignments,
@@ -61,6 +64,7 @@ async function getDashboardStats() {
     console.error("[v0] Dashboard stats error:", error)
     return {
       totalGuards: 0,
+      activeGuards: 0,
       activeSites: 0,
       totalShifts: 0,
       pendingAssignments: 0,
@@ -103,13 +107,13 @@ export default async function DashboardPage() {
         <Card className="border-l-4 border-l-primary">
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
             <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
-              Total Employees
+              Total Guards
             </CardTitle>
             <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold">{stats.totalGuards}</div>
-            <p className="text-xs text-muted-foreground">{stats.totalGuards} active</p>
+            <p className="text-xs text-muted-foreground">{stats.activeGuards} active</p>
           </CardContent>
         </Card>
 
