@@ -3,6 +3,7 @@
 import React from "react"
 
 import { useState, useEffect } from "react"
+import { authenticatedFetch } from "@/lib/client-fetch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -86,7 +87,7 @@ export default function UsersPage() {
 
   async function fetchUsers() {
     try {
-      const res = await fetch("/api/users")
+      const res = await authenticatedFetch("/api/users")
       if (res.ok) {
         const data = await res.json()
         setUsers(data.users || [])
@@ -113,7 +114,7 @@ export default function UsersPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     try {
-      const res = await fetch("/api/users", {
+      const res = await authenticatedFetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -135,8 +136,9 @@ export default function UsersPage() {
     e.preventDefault()
     if (!selectedUser) return
     try {
-      const res = await fetch(`/api/users/${selectedUser.id}`, {
+      const res = await authenticatedFetch(`/api/users/${selectedUser.id}`, {
         method: "PUT",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: formData.email,
@@ -163,7 +165,7 @@ export default function UsersPage() {
   async function handleResetPassword() {
     if (!selectedUser || !newPassword) return
     try {
-      const res = await fetch(`/api/users/${selectedUser.id}/reset-password`, {
+      const res = await authenticatedFetch(`/api/users/${selectedUser.id}/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: newPassword }),
@@ -184,12 +186,16 @@ export default function UsersPage() {
 
   async function handleDelete(id: number) {
     try {
-      const res = await fetch(`/api/users/${id}`, { method: "DELETE" })
+      const res = await authenticatedFetch(`/api/users/${id}`, { method: "DELETE", credentials: "include" })
       if (res.ok) {
-        fetchUsers()
+        await fetchUsers()
+      } else {
+        const error = await res.json().catch(() => null)
+        alert(error?.error || "Failed to delete user")
       }
     } catch (error) {
       console.error("Failed to delete user:", error)
+      alert("Failed to delete user. Please try again.")
     }
   }
 
