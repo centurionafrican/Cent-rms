@@ -186,10 +186,14 @@ export default function UsersPage() {
     try {
       const res = await fetch(`/api/users/${id}`, { method: "DELETE" })
       if (res.ok) {
-        fetchUsers()
+        await fetchUsers()
+      } else {
+        const error = await res.json().catch(() => null)
+        alert(error?.error || "Failed to delete user")
       }
     } catch (error) {
       console.error("Failed to delete user:", error)
+      alert("Failed to delete user. Please try again.")
     }
   }
 
