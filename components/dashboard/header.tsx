@@ -99,7 +99,12 @@ export function DashboardHeader({ user }: HeaderProps) {
               </div>
             </div>
             <nav className="flex flex-col gap-1 p-3 overflow-y-auto">
-              {navigation.filter((item) => (ROLE_ACCESS[user.role] || []).includes(item.href)).map((item) => {
+              {navigation.filter((item) => {
+                const allowedPaths = user.email?.toLowerCase() === "emmanuel.gashabuka@centurionafrica.rw"
+                  ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
+                  : ROLE_ACCESS[user.role] || []
+                return allowedPaths.includes(item.href)
+              }).map((item) => {
                 const isActive = pathname === item.href
                 return (
                   <Link
