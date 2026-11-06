@@ -233,6 +233,7 @@ export default function UsersPage() {
     hr: "bg-cyan-100 text-cyan-700 border-cyan-200",
     roster_manager: "bg-teal-100 text-teal-700 border-teal-200",
     coordinator: "bg-orange-100 text-orange-700 border-orange-200",
+    supervisor: "bg-slate-100 text-slate-700 border-slate-200",
   }
 
   if (loading) {
@@ -312,6 +313,7 @@ export default function UsersPage() {
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="coordinator">Coordinator</SelectItem>
+                        <SelectItem value="supervisor">Supervisor</SelectItem>
                         <SelectItem value="operations_manager">Operations Manager</SelectItem>
                         <SelectItem value="hr">HR</SelectItem>
                         <SelectItem value="coceo">Co-CEO</SelectItem>
