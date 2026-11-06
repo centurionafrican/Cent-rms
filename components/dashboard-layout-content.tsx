@@ -27,9 +27,12 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
 
   useEffect(() => {
     if (!user || pathname === "/dashboard") return
-    const allowedPaths = user.email?.toLowerCase() === "emmanuel.gashabuka@centurionafrica.rw"
+    const email = user.email?.toLowerCase()
+    const allowedPaths = email === "emmanuel.gashabuka@centurionafrica.rw"
       ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
-      : ROLE_ACCESS[user.role] || []
+      : email === "peace.munganyinka@centurionafrica.rw"
+        ? [...(ROLE_ACCESS[user.role] || []), "/dashboard/reports"]
+        : ROLE_ACCESS[user.role] || []
     const hasAccess = allowedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))
     if (!hasAccess) router.replace("/dashboard")
   }, [pathname, router, user])
@@ -38,9 +41,12 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
     return null
   }
 
-  const allowedPaths = user.email?.toLowerCase() === "emmanuel.gashabuka@centurionafrica.rw"
+  const email = user.email?.toLowerCase()
+  const allowedPaths = email === "emmanuel.gashabuka@centurionafrica.rw"
     ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
-    : ROLE_ACCESS[user.role] || []
+    : email === "peace.munganyinka@centurionafrica.rw"
+      ? [...(ROLE_ACCESS[user.role] || []), "/dashboard/reports"]
+      : ROLE_ACCESS[user.role] || []
   if (pathname !== "/dashboard" && !allowedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
     return null
   }

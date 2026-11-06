@@ -61,10 +61,13 @@ const roleLabels: Record<string, string> = {
 export function DashboardSidebar({ user }: SidebarProps) {
   const pathname = usePathname()
 
-  const emmanuelAccess = ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
-  const allowedPaths = user.email?.toLowerCase() === "emmanuel.gashabuka@centurionafrica.rw"
-    ? emmanuelAccess
-    : ROLE_ACCESS[user.role] || []
+  const email = user.email?.toLowerCase()
+  const emailAccess = email === "emmanuel.gashabuka@centurionafrica.rw"
+    ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
+    : email === "peace.munganyinka@centurionafrica.rw"
+      ? [...(ROLE_ACCESS[user.role] || []), "/dashboard/reports"]
+      : ROLE_ACCESS[user.role] || []
+  const allowedPaths = emailAccess
   const filteredNavigation = navigation
     .filter((item) => allowedPaths.includes(item.href))
     .filter((item) => {
