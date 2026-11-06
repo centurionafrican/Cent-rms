@@ -9,29 +9,25 @@ import bcrypt from "bcryptjs"
 export async function getSession(): Promise<User | null> {
   // Try to get token from cookie first
   const cookieStore = await cookies()
-  let token = cookieStore.get("session_id")?.value
+  const cookieToken = cookieStore.get("session_id")?.value
+  const headerList = await headers()
+  const authHeader = headerList.get("authorization")
+  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined
+  const tokens = [cookieToken, bearerToken].filter((value, index, list): value is string => Boolean(value) && list.indexOf(value) === index)
 
-  // If no cookie, try to get token from Authorization header (for API routes with Bearer tokens)
-  if (!token) {
-    const headerList = await headers()
-    const authHeader = headerList.get("authorization")
-    if (authHeader?.startsWith("Bearer ")) {
-      token = authHeader.slice(7)
-    }
-  }
-
-  if (!token) {
-    return null
-  }
+  if (tokens.length === 0) return null
 
   try {
-    const sessions = await sql`
-      SELECT u.* FROM users u
-      JOIN sessions s ON s.user_id = u.id
-      WHERE s.token = ${token} AND s.expires_at > NOW()
-    `
+    for (const token of tokens) {
+      const sessions = await sql`
+        SELECT u.* FROM users u
+        JOIN sessions s ON s.user_id = u.id
+        WHERE s.token = ${token} AND s.expires_at > NOW()
+      ` as unknown as User[]
+      if (sessions.length > 0) return sessions[0] as User
+    }
 
-    return sessions.length > 0 ? (sessions[0] as User) : null
+    return null
   } catch (error) {
     console.error("Error fetching session:", error)
     return null
