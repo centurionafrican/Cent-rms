@@ -55,12 +55,16 @@ const roleLabels: Record<string, string> = {
   hr: "HR",
   roster_manager: "Roster Manager",
   coordinator: "Coordinator",
+  supervisor: "Supervisor",
 }
 
 export function DashboardSidebar({ user }: SidebarProps) {
   const pathname = usePathname()
 
-  const allowedPaths = ROLE_ACCESS[user.role] || []
+  const emmanuelAccess = ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
+  const allowedPaths = user.email?.toLowerCase() === "emmanuel.gashabuka@centurionafrica.rw"
+    ? emmanuelAccess
+    : ROLE_ACCESS[user.role] || []
   const filteredNavigation = navigation
     .filter((item) => allowedPaths.includes(item.href))
     .filter((item) => {

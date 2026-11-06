@@ -96,10 +96,6 @@ export const ROLE_ACCESS: Record<string, string[]> = {
   ],
   roster_manager: [
     "/dashboard",
-    "/dashboard/clients",
-    "/dashboard/guards",
-    "/dashboard/sites",
-    "/dashboard/shifts",
     "/dashboard/assignments",
     "/dashboard/assignment-change-requests",
     "/dashboard/guard-offs",
@@ -107,9 +103,6 @@ export const ROLE_ACCESS: Record<string, string[]> = {
     "/dashboard/leaves",
     "/dashboard/leave-plan",
     "/dashboard/payroll",
-    "/dashboard/incidents",
-    "/dashboard/guard-portal",
-    "/dashboard/reports",
   ],
   operations_manager: [
     "/dashboard",
@@ -145,20 +138,18 @@ export const ROLE_ACCESS: Record<string, string[]> = {
   ],
   coordinator: [
     "/dashboard",
-    "/dashboard/clients",
-    "/dashboard/guards",
-    "/dashboard/sites",
-    "/dashboard/shifts",
     "/dashboard/assignments",
     "/dashboard/assignment-change-requests",
     "/dashboard/guard-offs",
     "/dashboard/time-attendance",
     "/dashboard/leaves",
     "/dashboard/leave-plan",
-    "/dashboard/payroll",
-    "/dashboard/incidents",
     "/dashboard/guard-portal",
-    "/dashboard/reports",
+  ],
+  supervisor: [
+    "/dashboard",
+    "/dashboard/time-attendance",
+    "/dashboard/guard-portal",
   ],
 }
 
@@ -210,6 +201,13 @@ export const ROLE_PERMISSIONS: Record<string, Record<string, boolean>> = {
     approvalLevel: "second", // HR second approval
   },
   coordinator: {
+    canAdd: false,
+    canEdit: false,
+    canDelete: false,
+    canApproveLeaves: false,
+    canAccessSystemUsers: false,
+  },
+  supervisor: {
     canAdd: false,
     canEdit: false,
     canDelete: false,
