@@ -137,6 +137,7 @@ export default function UsersPage() {
     try {
       const res = await fetch(`/api/users/${selectedUser.id}`, {
         method: "PUT",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: formData.email,
@@ -184,7 +185,7 @@ export default function UsersPage() {
 
   async function handleDelete(id: number) {
     try {
-      const res = await fetch(`/api/users/${id}`, { method: "DELETE" })
+      const res = await fetch(`/api/users/${id}`, { method: "DELETE", credentials: "include" })
       if (res.ok) {
         await fetchUsers()
       } else {
