@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/auth"
-import { sql } from "@/lib/db"
+import { ROLE_ACCESS, sql } from "@/lib/db"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -94,6 +94,7 @@ async function getGuardsWithStatus() {
 
 export default async function DashboardPage() {
   const session = await getSession()
+  const email = session?.email?.trim().toLowerCase()
   const role = String(session?.role || "coordinator").trim().toLowerCase()
 
   if (role === "supervisor") return <SupervisorDashboard />
@@ -101,9 +102,14 @@ export default async function DashboardPage() {
   const stats = await getDashboardStats()
   if (role === "coordinator") return <CoordinatorDashboard stats={stats} />
 
-  const canAccess = (_path: string) => true
-  const canMakeAssignments = true
-  const guards = await getGuardsWithStatus()
+  const allowedPaths = email === "emmanuel.gashabuka@centurionafrica.rw"
+    ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
+    : email === "peace.munganyinka@centurionafrica.rw"
+      ? [...(ROLE_ACCESS[role] || []), "/dashboard/reports"]
+      : ROLE_ACCESS[role] || []
+  const canAccess = (path: string) => allowedPaths.includes(path)
+  const canMakeAssignments = canAccess("/dashboard/assignments")
+  const guards = canAccess("/dashboard/guards") ? await getGuardsWithStatus() : []
 
   return (
     <div className="space-y-6">
