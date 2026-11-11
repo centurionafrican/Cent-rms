@@ -310,9 +310,9 @@ export function LeavesList({ initialLeaves, guards, currentUserId, currentUserRo
             </SelectContent>
           </Select>
         </div>
-        {(currentUserRole === "roster_manager" || currentUserRole === "admin") && (
+        {(currentUserRole === "coordinator" || currentUserRole === "roster_manager" || currentUserRole === "admin") && (
           <div className="flex items-center gap-2">
-            {selectedIds.size > 0 && (
+            {(currentUserRole === "roster_manager" || currentUserRole === "admin") && selectedIds.size > 0 && (
               <Button variant="destructive" size="sm" onClick={handleBulkDelete} disabled={bulkDeleting}>
                 <Trash2 className="h-4 w-4 mr-1" />
                 {bulkDeleting ? "Deleting..." : `Delete (${selectedIds.size})`}

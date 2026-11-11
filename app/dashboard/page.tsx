@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/auth"
-import { sql } from "@/lib/db"
+import { ROLE_ACCESS, sql } from "@/lib/db"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -92,8 +92,16 @@ async function getGuardsWithStatus() {
 }
 
 export default async function DashboardPage() {
+  const session = await getSession()
+  const email = session?.email?.toLowerCase()
+  const allowedPaths = email === "emmanuel.gashabuka@centurionafrica.rw"
+    ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
+    : email === "peace.munganyinka@centurionafrica.rw"
+      ? [...(ROLE_ACCESS[session?.role || ""] || []), "/dashboard/reports"]
+      : ROLE_ACCESS[session?.role || ""] || []
+  const canAccess = (path: string) => allowedPaths.includes(path)
   const stats = await getDashboardStats()
-  const guards = await getGuardsWithStatus()
+  const guards = canAccess("/dashboard/guards") ? await getGuardsWithStatus() : []
 
   return (
     <div className="space-y-6">
@@ -104,7 +112,7 @@ export default async function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
-        <Card className="border-l-4 border-l-primary">
+        {canAccess("/dashboard/guards") && <Card className="border-l-4 border-l-primary">
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
             <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Total Guards
@@ -115,9 +123,9 @@ export default async function DashboardPage() {
             <div className="text-2xl font-bold">{stats.totalGuards}</div>
             <p className="text-xs text-muted-foreground">{stats.activeGuards} active</p>
           </CardContent>
-        </Card>
+        </Card>}
 
-        <Card className="border-l-4 border-l-green-500">
+        {canAccess("/dashboard/sites") && <Card className="border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
             <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Active Sites
@@ -128,9 +136,9 @@ export default async function DashboardPage() {
             <div className="text-2xl font-bold">{stats.activeSites}</div>
             <p className="text-xs text-muted-foreground">{stats.activeSites} locations</p>
           </CardContent>
-        </Card>
+        </Card>}
 
-        <Card className="border-l-4 border-l-sky-500">
+        {canAccess("/dashboard/clients") && <Card className="border-l-4 border-l-sky-500">
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
             <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Total Clients
@@ -141,9 +149,9 @@ export default async function DashboardPage() {
             <div className="text-2xl font-bold">{stats.totalClients}</div>
             <p className="text-xs text-muted-foreground">Registered</p>
           </CardContent>
-        </Card>
+        </Card>}
 
-        <Card className="border-l-4 border-l-blue-500">
+        {canAccess("/dashboard/shifts") && <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
             <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Total Shifts
@@ -154,9 +162,9 @@ export default async function DashboardPage() {
             <div className="text-2xl font-bold">{stats.totalShifts}</div>
             <p className="text-xs text-muted-foreground">Shift types</p>
           </CardContent>
-        </Card>
+        </Card>}
 
-        <Card className="border-l-4 border-l-amber-500">
+        {canAccess("/dashboard/assignments") && <Card className="border-l-4 border-l-amber-500">
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
             <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Pending Assignments
@@ -167,9 +175,9 @@ export default async function DashboardPage() {
             <div className="text-2xl font-bold">{stats.pendingAssignments}</div>
             <p className="text-xs text-muted-foreground">Scheduled</p>
           </CardContent>
-        </Card>
+        </Card>}
 
-        <Card className="border-l-4 border-l-red-500">
+        {canAccess("/dashboard/incidents") && <Card className="border-l-4 border-l-red-500">
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
             <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Open Incidents
@@ -180,9 +188,9 @@ export default async function DashboardPage() {
             <div className="text-2xl font-bold">{stats.openIncidents}</div>
             <p className="text-xs text-muted-foreground">Attention</p>
           </CardContent>
-        </Card>
+        </Card>}
 
-        <Card className="border-l-4 border-l-violet-500">
+        {canAccess("/dashboard/leaves") && <Card className="border-l-4 border-l-violet-500">
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-4 pb-1">
             <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
               Pending Leaves
@@ -193,54 +201,54 @@ export default async function DashboardPage() {
             <div className="text-2xl font-bold">{stats.pendingLeaves}</div>
             <p className="text-xs text-muted-foreground">Awaiting</p>
           </CardContent>
-        </Card>
+        </Card>}
       </div>
 
       {/* Quick Actions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Link href="/dashboard/guards">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {canAccess("/dashboard/guards") && <Link href="/dashboard/guards">
           <Button className="w-full h-auto py-6 flex flex-col gap-2 bg-primary hover:bg-primary/90">
             <UserPlus className="h-6 w-6" />
             <span className="font-semibold">Add Guard</span>
             <span className="text-xs opacity-80">Register new security personnel</span>
           </Button>
-        </Link>
+        </Link>}
 
-        <Link href="/dashboard/clients">
+        {canAccess("/dashboard/clients") && <Link href="/dashboard/clients">
           <Button className="w-full h-auto py-6 flex flex-col gap-2 bg-sky-600 hover:bg-sky-700 text-white">
             <Briefcase className="h-6 w-6" />
             <span className="font-semibold">Add Client</span>
             <span className="text-xs opacity-80">Register new client</span>
           </Button>
-        </Link>
+        </Link>}
 
-        <Link href="/dashboard/shifts">
+        {canAccess("/dashboard/shifts") && <Link href="/dashboard/shifts">
           <Button className="w-full h-auto py-6 flex flex-col gap-2 bg-blue-600 hover:bg-blue-700 text-white">
             <CalendarPlus className="h-6 w-6" />
             <span className="font-semibold">Manage Shifts</span>
             <span className="text-xs opacity-80">Create and configure shifts</span>
           </Button>
-        </Link>
+        </Link>}
 
-        <Link href="/dashboard/sites">
+        {canAccess("/dashboard/sites") && <Link href="/dashboard/sites">
           <Button className="w-full h-auto py-6 flex flex-col gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
             <Building2 className="h-6 w-6" />
             <span className="font-semibold">Add Site</span>
             <span className="text-xs opacity-80">Register new security location</span>
           </Button>
-        </Link>
+        </Link>}
 
-        <Link href="/dashboard/assignments">
+        {canAccess("/dashboard/assignments") && <Link href="/dashboard/assignments">
           <Button className="w-full h-auto py-6 flex flex-col gap-2 hover:bg-amber-700 text-white bg-accent">
             <ClipboardList className="h-6 w-6" />
             <span className="font-semibold">Make Assignment</span>
             <span className="text-xs opacity-80">Assign guards to shifts</span>
           </Button>
-        </Link>
+        </Link>}
       </div>
 
       {/* Employee Roster */}
-      <Card>
+      {canAccess("/dashboard/guards") && <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Employee Roster</CardTitle>
@@ -253,10 +261,10 @@ export default async function DashboardPage() {
         <CardContent>
           <EmployeeRosterTable guards={guards as Record<string, unknown>[]} />
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Reports & Analytics */}
-      <Card>
+      {canAccess("/dashboard/reports") && <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Reports & Analytics</CardTitle>
@@ -301,7 +309,7 @@ export default async function DashboardPage() {
             </Link>
           </div>
         </CardContent>
-      </Card>
+      </Card>}
     </div>
   )
 }
