@@ -100,12 +100,15 @@ export function DashboardHeader({ user }: HeaderProps) {
             </div>
             <nav className="flex flex-col gap-1 p-3 overflow-y-auto">
               {navigation.filter((item) => {
-                const email = user.email?.toLowerCase()
-                const allowedPaths = email === "emmanuel.gashabuka@centurionafrica.rw"
-                  ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
+                const email = user.email?.trim().toLowerCase()
+                const role = String(user.role || "").trim().toLowerCase()
+                const allowedPaths = role === "supervisor"
+                  ? ROLE_ACCESS[role] || []
+                  : email === "emmanuel.gashabuka@centurionafrica.rw"
+                    ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
                   : email === "peace.munganyinka@centurionafrica.rw"
-                    ? [...(ROLE_ACCESS[user.role] || []), "/dashboard/reports"]
-                    : ROLE_ACCESS[user.role] || []
+                    ? [...(ROLE_ACCESS[role] || []), "/dashboard/reports"]
+                    : ROLE_ACCESS[role] || []
                 return allowedPaths.includes(item.href)
               }).map((item) => {
                 const isActive = pathname === item.href
@@ -151,7 +154,7 @@ export function DashboardHeader({ user }: HeaderProps) {
               <div className="flex flex-col">
                 <span>{user.first_name} {user.last_name}</span>
                 <span className="text-xs font-normal text-muted-foreground">
-                  {roleLabels[user.role] || user.role}
+                  {roleLabels[String(user.role || "").trim().toLowerCase()] || user.role}
                 </span>
                 <span className="text-xs font-normal text-muted-foreground">
                   {user.email}
