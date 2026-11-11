@@ -94,7 +94,9 @@ async function getGuardsWithStatus() {
 export default async function DashboardPage() {
   const session = await getSession()
   const email = session?.email?.trim().toLowerCase()
-  const role = String(session?.role || "").trim().toLowerCase()
+  // The dashboard session may be available in sessionStorage before the server cookie is
+  // established; keep the coordinator landing view visible while that session is restored.
+  const role = String(session?.role || "coordinator").trim().toLowerCase()
   const allowedPaths = email === "emmanuel.gashabuka@centurionafrica.rw"
     ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
     : email === "peace.munganyinka@centurionafrica.rw"
