@@ -93,13 +93,15 @@ async function getGuardsWithStatus() {
 
 export default async function DashboardPage() {
   const session = await getSession()
-  const email = session?.email?.toLowerCase()
+  const email = session?.email?.trim().toLowerCase()
+  const role = String(session?.role || "").trim().toLowerCase()
   const allowedPaths = email === "emmanuel.gashabuka@centurionafrica.rw"
     ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
     : email === "peace.munganyinka@centurionafrica.rw"
-      ? [...(ROLE_ACCESS[session?.role || ""] || []), "/dashboard/reports"]
-      : ROLE_ACCESS[session?.role || ""] || []
+      ? [...(ROLE_ACCESS[role] || []), "/dashboard/reports"]
+      : ROLE_ACCESS[role] || []
   const canAccess = (path: string) => allowedPaths.includes(path)
+  const canMakeAssignments = role === "coordinator" || canAccess("/dashboard/assignments")
   const stats = await getDashboardStats()
   const guards = canAccess("/dashboard/guards") ? await getGuardsWithStatus() : []
 
@@ -238,7 +240,7 @@ export default async function DashboardPage() {
           </Button>
         </Link>}
 
-        {canAccess("/dashboard/assignments") && <Link href="/dashboard/assignments">
+        {canMakeAssignments && <Link href="/dashboard/assignments">
           <Button className="w-full h-auto py-6 flex flex-col gap-2 hover:bg-amber-700 text-white bg-accent">
             <ClipboardList className="h-6 w-6" />
             <span className="font-semibold">Make Assignment</span>
