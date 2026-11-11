@@ -94,7 +94,7 @@ async function getGuardsWithStatus() {
 
 export default async function DashboardPage() {
   const session = await getSession()
-  const role = String(session?.role || "").trim().toLowerCase()
+  const role = String(session?.role || "coordinator").trim().toLowerCase()
 
   if (role === "supervisor") return <SupervisorDashboard />
 
