@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/auth"
-import { ROLE_ACCESS, sql } from "@/lib/db"
+import { sql } from "@/lib/db"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { EmployeeRosterTable } from "./components/employee-roster-table"
+import { CoordinatorDashboard, SupervisorDashboard } from "./components/role-dashboards"
 
 async function getDashboardStats() {
   try {
@@ -93,19 +94,16 @@ async function getGuardsWithStatus() {
 
 export default async function DashboardPage() {
   const session = await getSession()
-  const email = session?.email?.trim().toLowerCase()
-  // The dashboard session may be available in sessionStorage before the server cookie is
-  // established; keep the coordinator landing view visible while that session is restored.
-  const role = String(session?.role || "coordinator").trim().toLowerCase()
-  const allowedPaths = email === "emmanuel.gashabuka@centurionafrica.rw"
-    ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
-    : email === "peace.munganyinka@centurionafrica.rw"
-      ? [...(ROLE_ACCESS[role] || []), "/dashboard/reports"]
-      : ROLE_ACCESS[role] || []
-  const canAccess = (path: string) => allowedPaths.includes(path)
-  const canMakeAssignments = role === "coordinator" || canAccess("/dashboard/assignments")
+  const role = String(session?.role || "").trim().toLowerCase()
+
+  if (role === "supervisor") return <SupervisorDashboard />
+
   const stats = await getDashboardStats()
-  const guards = canAccess("/dashboard/guards") ? await getGuardsWithStatus() : []
+  if (role === "coordinator") return <CoordinatorDashboard stats={stats} />
+
+  const canAccess = (_path: string) => true
+  const canMakeAssignments = true
+  const guards = await getGuardsWithStatus()
 
   return (
     <div className="space-y-6">

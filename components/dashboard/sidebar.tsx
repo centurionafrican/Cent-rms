@@ -61,18 +61,21 @@ const roleLabels: Record<string, string> = {
 export function DashboardSidebar({ user }: SidebarProps) {
   const pathname = usePathname()
 
-  const email = user.email?.toLowerCase()
-  const emailAccess = email === "emmanuel.gashabuka@centurionafrica.rw"
-    ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
+  const email = user.email?.trim().toLowerCase()
+  const role = String(user.role || "").trim().toLowerCase()
+  const emailAccess = role === "supervisor"
+    ? ROLE_ACCESS[role] || []
+    : email === "emmanuel.gashabuka@centurionafrica.rw"
+      ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
     : email === "peace.munganyinka@centurionafrica.rw"
-      ? [...(ROLE_ACCESS[user.role] || []), "/dashboard/reports"]
-      : ROLE_ACCESS[user.role] || []
+      ? [...(ROLE_ACCESS[role] || []), "/dashboard/reports"]
+      : ROLE_ACCESS[role] || []
   const allowedPaths = emailAccess
   const filteredNavigation = navigation
     .filter((item) => allowedPaths.includes(item.href))
     .filter((item) => {
       // Hide System Users for non-admin users
-      if (item.href === "/dashboard/users" && user.role !== "admin") {
+      if (item.href === "/dashboard/users" && role !== "admin") {
         return false
       }
       return true
@@ -103,7 +106,7 @@ export function DashboardSidebar({ user }: SidebarProps) {
               {user.first_name} {user.last_name}
             </p>
             <p className="truncate text-xs text-sidebar-foreground/60">
-              {roleLabels[user.role] || user.role}
+              {roleLabels[role] || user.role}
             </p>
           </div>
         </div>

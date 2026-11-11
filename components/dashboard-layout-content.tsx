@@ -65,8 +65,10 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
     if (!user || pathname === "/dashboard") return
     const email = user.email?.trim().toLowerCase()
     const role = String(user.role || "").trim().toLowerCase()
-    const allowedPaths = email === "emmanuel.gashabuka@centurionafrica.rw"
-      ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
+    const allowedPaths = role === "supervisor"
+      ? ROLE_ACCESS[role] || []
+      : email === "emmanuel.gashabuka@centurionafrica.rw"
+        ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
       : email === "peace.munganyinka@centurionafrica.rw"
         ? [...(ROLE_ACCESS[role] || []), "/dashboard/reports"]
         : ROLE_ACCESS[role] || []
@@ -81,11 +83,13 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
 
   const email = user.email?.trim().toLowerCase()
   const role = String(user.role || "").trim().toLowerCase()
-  const allowedPaths = email === "emmanuel.gashabuka@centurionafrica.rw"
-    ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
-    : email === "peace.munganyinka@centurionafrica.rw"
-      ? [...(ROLE_ACCESS[role] || []), "/dashboard/reports"]
-      : ROLE_ACCESS[role] || []
+  const allowedPaths = role === "supervisor"
+    ? ROLE_ACCESS[role] || []
+    : email === "emmanuel.gashabuka@centurionafrica.rw"
+      ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
+      : email === "peace.munganyinka@centurionafrica.rw"
+        ? [...(ROLE_ACCESS[role] || []), "/dashboard/reports"]
+        : ROLE_ACCESS[role] || []
   if (pathname !== "/dashboard" && !allowedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
     return null
   }
