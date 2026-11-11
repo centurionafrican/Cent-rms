@@ -14,39 +14,78 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
   const router = useRouter()
 
   useEffect(() => {
-    const userStr = sessionStorage.getItem("user")
-    if (userStr) {
-      try {
-        setUser(JSON.parse(userStr))
-      } catch (error) {
-        console.error("Failed to parse user:", error)
+    let cancelled = false
+
+    async function restoreUser() {
+      const userStr = sessionStorage.getItem("user")
+      if (userStr) {
+        try {
+          const storedUser = JSON.parse(userStr) as User
+          if (!cancelled) setUser(storedUser)
+          setLoading(false)
+          return
+        } catch (error) {
+          console.error("Failed to parse user:", error)
+          sessionStorage.removeItem("user")
+        }
       }
+
+      const token = sessionStorage.getItem("auth_token")
+      if (token) {
+        try {
+          const response = await fetch("/api/auth/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (response.ok) {
+            const data = await response.json()
+            if (!cancelled && data.user) {
+              sessionStorage.setItem("user", JSON.stringify(data.user))
+              setUser(data.user)
+            }
+          } else {
+            sessionStorage.removeItem("auth_token")
+          }
+        } catch (error) {
+          console.error("Failed to restore session user:", error)
+        }
+      }
+
+      if (!cancelled) setLoading(false)
     }
-    setLoading(false)
+
+    void restoreUser()
+    return () => { cancelled = true }
   }, [])
 
   useEffect(() => {
+    if (!loading && !user) router.replace("/login")
+  }, [loading, router, user])
+
+  useEffect(() => {
     if (!user || pathname === "/dashboard") return
-    const email = user.email?.toLowerCase()
+    const email = user.email?.trim().toLowerCase()
+    const role = String(user.role || "").trim().toLowerCase()
     const allowedPaths = email === "emmanuel.gashabuka@centurionafrica.rw"
       ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
       : email === "peace.munganyinka@centurionafrica.rw"
-        ? [...(ROLE_ACCESS[user.role] || []), "/dashboard/reports"]
-        : ROLE_ACCESS[user.role] || []
+        ? [...(ROLE_ACCESS[role] || []), "/dashboard/reports"]
+        : ROLE_ACCESS[role] || []
     const hasAccess = allowedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))
     if (!hasAccess) router.replace("/dashboard")
   }, [pathname, router, user])
 
-  if (loading || !user) {
-    return null
+  if (loading) {
+    return <main className="flex min-h-screen items-center justify-center text-muted-foreground">Loading your dashboard…</main>
   }
+  if (!user) return null
 
-  const email = user.email?.toLowerCase()
+  const email = user.email?.trim().toLowerCase()
+  const role = String(user.role || "").trim().toLowerCase()
   const allowedPaths = email === "emmanuel.gashabuka@centurionafrica.rw"
     ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
     : email === "peace.munganyinka@centurionafrica.rw"
-      ? [...(ROLE_ACCESS[user.role] || []), "/dashboard/reports"]
-      : ROLE_ACCESS[user.role] || []
+      ? [...(ROLE_ACCESS[role] || []), "/dashboard/reports"]
+      : ROLE_ACCESS[role] || []
   if (pathname !== "/dashboard" && !allowedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
     return null
   }
