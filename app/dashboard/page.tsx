@@ -94,7 +94,7 @@ async function getGuardsWithStatus() {
 
 export default async function DashboardPage() {
   const session = await getSession()
-  const role = String(session?.role || "").trim().toLowerCase()
+  const role = String(session?.role || "coordinator").trim().toLowerCase()
 
   if (role === "supervisor") return <SupervisorDashboard />
 
@@ -102,7 +102,8 @@ export default async function DashboardPage() {
   if (role === "coordinator") return <CoordinatorDashboard stats={stats} />
 
   const canAccess = (_path: string) => true
-  const canMakeAssignments = true
+  const canMakeAssignments = role !== "supervisor"
+  const showQuickActionCards = role !== "coordinator" && role !== "supervisor"
   const guards = await getGuardsWithStatus()
 
   return (
@@ -208,37 +209,39 @@ export default async function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {canAccess("/dashboard/guards") && <Link href="/dashboard/guards">
-          <Button className="w-full h-auto py-6 flex flex-col gap-2 bg-primary hover:bg-primary/90">
-            <UserPlus className="h-6 w-6" />
-            <span className="font-semibold">Add Guard</span>
-            <span className="text-xs opacity-80">Register new security personnel</span>
-          </Button>
-        </Link>}
+        {showQuickActionCards && <>
+          {canAccess("/dashboard/guards") && <Link href="/dashboard/guards">
+            <Button className="w-full h-auto py-6 flex flex-col gap-2 bg-primary hover:bg-primary/90">
+              <UserPlus className="h-6 w-6" />
+              <span className="font-semibold">Add Guard</span>
+              <span className="text-xs opacity-80">Register new security personnel</span>
+            </Button>
+          </Link>}
 
-        {canAccess("/dashboard/clients") && <Link href="/dashboard/clients">
-          <Button className="w-full h-auto py-6 flex flex-col gap-2 bg-sky-600 hover:bg-sky-700 text-white">
-            <Briefcase className="h-6 w-6" />
-            <span className="font-semibold">Add Client</span>
-            <span className="text-xs opacity-80">Register new client</span>
-          </Button>
-        </Link>}
+          {canAccess("/dashboard/clients") && <Link href="/dashboard/clients">
+            <Button className="w-full h-auto py-6 flex flex-col gap-2 bg-sky-600 hover:bg-sky-700 text-white">
+              <Briefcase className="h-6 w-6" />
+              <span className="font-semibold">Add Client</span>
+              <span className="text-xs opacity-80">Register new client</span>
+            </Button>
+          </Link>}
 
-        {canAccess("/dashboard/shifts") && <Link href="/dashboard/shifts">
-          <Button className="w-full h-auto py-6 flex flex-col gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-            <CalendarPlus className="h-6 w-6" />
-            <span className="font-semibold">Manage Shifts</span>
-            <span className="text-xs opacity-80">Create and configure shifts</span>
-          </Button>
-        </Link>}
+          {canAccess("/dashboard/shifts") && <Link href="/dashboard/shifts">
+            <Button className="w-full h-auto py-6 flex flex-col gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+              <CalendarPlus className="h-6 w-6" />
+              <span className="font-semibold">Manage Shifts</span>
+              <span className="text-xs opacity-80">Create and configure shifts</span>
+            </Button>
+          </Link>}
 
-        {canAccess("/dashboard/sites") && <Link href="/dashboard/sites">
-          <Button className="w-full h-auto py-6 flex flex-col gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
-            <Building2 className="h-6 w-6" />
-            <span className="font-semibold">Add Site</span>
-            <span className="text-xs opacity-80">Register new security location</span>
-          </Button>
-        </Link>}
+          {canAccess("/dashboard/sites") && <Link href="/dashboard/sites">
+            <Button className="w-full h-auto py-6 flex flex-col gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+              <Building2 className="h-6 w-6" />
+              <span className="font-semibold">Add Site</span>
+              <span className="text-xs opacity-80">Register new security location</span>
+            </Button>
+          </Link>}
+        </>}
 
         {canMakeAssignments && <Link href="/dashboard/assignments">
           <Button className="w-full h-auto py-6 flex flex-col gap-2 hover:bg-amber-700 text-white bg-accent">
