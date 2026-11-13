@@ -19,7 +19,6 @@ import {
   Briefcase,
 } from "lucide-react"
 import Link from "next/link"
-import { redirect } from "next/navigation"
 import { EmployeeRosterTable } from "./components/employee-roster-table"
 import { CoordinatorDashboard, SupervisorDashboard } from "./components/role-dashboards"
 
@@ -95,9 +94,7 @@ async function getGuardsWithStatus() {
 
 export default async function DashboardPage() {
   const session = await getSession()
-  if (!session) redirect("/login")
-
-  const role = String(session.role || "").trim().toLowerCase()
+  const role = String(session?.role || "").trim().toLowerCase()
 
   if (role === "supervisor") return <SupervisorDashboard />
 

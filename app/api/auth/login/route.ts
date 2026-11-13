@@ -30,15 +30,18 @@ export async function POST(request: Request) {
       },
     })
 
-    // Set session cookie - this will be captured by middleware
+    // v0 previews run in a cross-site iframe, so use None + Secure for HTTPS origins.
     if (result.token) {
+      const origin = request.headers.get("origin")
+      const isSecureOrigin = origin?.startsWith("https://") || new URL(request.url).protocol === "https:"
+
       response.cookies.set({
         name: "session_id",
         value: result.token,
         httpOnly: true,
-        secure: false, // Allow localhost in development
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+        secure: isSecureOrigin,
+        sameSite: isSecureOrigin ? "none" : "lax",
+        maxAge: 7 * 24 * 60 * 60,
         path: "/",
       })
     }
