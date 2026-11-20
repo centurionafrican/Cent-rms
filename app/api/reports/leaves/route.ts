@@ -1,7 +1,11 @@
+import { getReportAccessResponse } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
 
 export async function GET(request: Request) {
+  const accessResponse = await getReportAccessResponse()
+  if (accessResponse) return accessResponse
+
   try {
     const { searchParams } = new URL(request.url)
     const from = searchParams.get("from")
@@ -32,7 +36,7 @@ export async function GET(request: Request) {
         LEFT JOIN users om ON om.id = l.ops_manager_approved_by
         LEFT JOIN users hr ON hr.id = l.hr_approved_by
         LEFT JOIN users coceo ON coceo.id = l.coceo_approved_by
-        WHERE l.start_date::date >= ${from}::date AND l.start_date::date <= ${to}::date
+        WHERE l.start_date::date <= ${to}::date AND l.end_date::date >= ${from}::date
         ORDER BY l.start_date DESC, l.id DESC
       `
     } else {
@@ -113,7 +117,7 @@ export async function GET(request: Request) {
 
     const csv = [
       headers.join(","),
-      ...rows.map(row => row.map(cell => `"${String(cell || "").replace(/"/g, '""')}"`).join(","))
+      ...rows.map(row => row.map(cell => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
     ].join("\n")
 
     return new NextResponse(csv, {

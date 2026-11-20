@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
-import { getSession } from "@/lib/auth"
+import { getReportAccessResponse } from "@/lib/auth"
 
 export async function GET() {
+  const accessResponse = await getReportAccessResponse()
+  if (accessResponse) return accessResponse
+
   try {
     const sites = await sql`
       SELECT 
         ROW_NUMBER() OVER (ORDER BY s.name) AS row_num,
-        s.name, s.district, s.sector, s.contact_person, s.contact_phone, s.is_active, s.created_at,
+        s.name, s.district, s.sector, s.contact_person, s.contact_phone, s.guards_needed, s.is_active, s.created_at,
         COUNT(DISTINCT a.guard_id) as assigned_guards,
         (SELECT STRING_AGG(p.name, ', ') FROM posts p WHERE p.site_id = s.id) as posts
       FROM sites s
@@ -16,7 +19,7 @@ export async function GET() {
       ORDER BY s.name
     `
 
-    const headers = ["#", "Name", "District", "Sector", "Contact Person", "Contact Phone", "Active", "Assigned Guards", "Posts", "Created At"]
+    const headers = ["#", "Name", "District", "Sector", "Contact Person", "Contact Phone", "Guards Needed", "Active", "Assigned Guards", "Posts", "Created At"]
     const rows = sites.map(s => [
       s.row_num,
       s.name,
@@ -24,6 +27,7 @@ export async function GET() {
       s.sector,
       s.contact_person,
       s.contact_phone,
+      s.guards_needed ?? "",
       s.is_active ? "Yes" : "No",
       s.assigned_guards,
       s.posts || "None",
@@ -32,7 +36,7 @@ export async function GET() {
 
     const csv = [
       headers.join(","),
-      ...rows.map(row => row.map(cell => `"${cell || ""}"`).join(","))
+      ...rows.map(row => row.map(cell => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
     ].join("\n")
 
     return new NextResponse(csv, {

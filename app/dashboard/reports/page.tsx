@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth"
+import { canAccessReports, getSession } from "@/lib/auth"
 import { sql } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { ReportsDashboard } from "./reports-dashboard"
@@ -18,11 +18,12 @@ async function getReportData() {
       COUNT(*) as count
     FROM guards
     GROUP BY status
-  `
+  ` as Array<{ status: string | null; count: number | string }>
 
   // Assignments by site
   const assignmentsBySite = await sql`
     SELECT 
+      s.id as site_id,
       s.name as site,
       COUNT(a.id) as count
     FROM sites s
@@ -32,7 +33,7 @@ async function getReportData() {
     WHERE s.is_active = true
     GROUP BY s.id, s.name
     ORDER BY count DESC
-  `
+  ` as Array<{ site_id: number; site: string; count: number | string }>
 
   // Attendance summary
   const attendanceSummary = await sql`
@@ -41,7 +42,7 @@ async function getReportData() {
       COUNT(*) as count
     FROM attendance
     GROUP BY status
-  `
+  ` as Array<{ status: string | null; count: number | string }>
 
   // Leave requests by type
   const leavesByType = await sql`
@@ -50,7 +51,7 @@ async function getReportData() {
       COUNT(*) as count
     FROM leave_requests
     GROUP BY leave_type
-  `
+  ` as Array<{ leave_type: string | null; count: number | string }>
 
   // Incidents by severity
   const incidentsBySeverity = await sql`
@@ -59,30 +60,30 @@ async function getReportData() {
       COUNT(*) as count
     FROM incidents
     GROUP BY severity
-  `
+  ` as Array<{ severity: string | null; count: number | string }>
 
   // Overall stats
   const totalGuards = await sql`
     SELECT COUNT(*) as count FROM guards WHERE status = 'active'
-  `
+  ` as Array<{ count: number | string }>
 
   const totalSites = await sql`
     SELECT COUNT(*) as count FROM sites WHERE is_active = true
-  `
+  ` as Array<{ count: number | string }>
 
   const totalAssignmentsThisMonth = await sql`
     SELECT COUNT(*) as count FROM assignments 
     WHERE date >= ${startOfMonth.toISOString().split("T")[0]}
       AND date <= ${endOfMonth.toISOString().split("T")[0]}
-  `
+  ` as Array<{ count: number | string }>
 
   const pendingLeaves = await sql`
     SELECT COUNT(*) as count FROM leave_requests WHERE status = 'pending'
-  `
+  ` as Array<{ count: number | string }>
 
   const openIncidents = await sql`
     SELECT COUNT(*) as count FROM incidents WHERE status = 'open'
-  `
+  ` as Array<{ count: number | string }>
 
   return {
     guardsByStatus,
@@ -101,6 +102,10 @@ async function getReportData() {
 }
 
 export default async function ReportsPage() {
+  const user = await getSession()
+  if (!user) redirect("/login")
+  if (!canAccessReports(user)) redirect("/dashboard")
+
   const reportData = await getReportData()
 
   return (

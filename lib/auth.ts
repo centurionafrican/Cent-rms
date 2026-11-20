@@ -1,5 +1,6 @@
 import { cookies, headers } from "next/headers"
-import { sql, type User } from "./db"
+import { NextResponse } from "next/server"
+import { ROLE_ACCESS, sql, type User } from "./db"
 import bcrypt from "bcryptjs"
 
 /**
@@ -32,6 +33,28 @@ export async function getSession(): Promise<User | null> {
     console.error("Error fetching session:", error)
     return null
   }
+}
+
+export function canAccessReports(user: User): boolean {
+  const email = user.email?.trim().toLowerCase()
+  const role = String(user.role || "").trim().toLowerCase()
+  const rolePaths = ROLE_ACCESS[role] || []
+  const allowedPaths = role === "supervisor"
+    ? rolePaths
+    : email === "emmanuel.gashabuka@centurionafrica.rw"
+      ? ["/dashboard", "/dashboard/clients", "/dashboard/guards", "/dashboard/sites"]
+      : email === "peace.munganyinka@centurionafrica.rw"
+        ? [...rolePaths, "/dashboard/reports"]
+        : rolePaths
+
+  return allowedPaths.includes("/dashboard/reports")
+}
+
+export async function getReportAccessResponse(): Promise<NextResponse | null> {
+  const user = await getSession()
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  if (!canAccessReports(user)) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  return null
 }
 
 /**

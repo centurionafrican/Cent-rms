@@ -45,12 +45,14 @@ import {
   Cell,
 } from "recharts"
 
+type ReportCount = number | string
+
 interface ReportData {
-  guardsByStatus: { status: string; count: number }[]
-  assignmentsBySite: { site: string; count: number }[]
-  attendanceSummary: { status: string; count: number }[]
-  leavesByType: { leave_type: string; count: number }[]
-  incidentsBySeverity: { severity: string; count: number }[]
+  guardsByStatus: { status: string | null; count: ReportCount }[]
+  assignmentsBySite: { site_id: number; site: string; count: ReportCount }[]
+  attendanceSummary: { status: string | null; count: ReportCount }[]
+  leavesByType: { leave_type: string | null; count: ReportCount }[]
+  incidentsBySeverity: { severity: string | null; count: ReportCount }[]
   stats: {
     totalGuards: number
     totalSites: number
@@ -65,6 +67,7 @@ interface ReportsDashboardProps {
 }
 
 const COLORS = ["#1e40af", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#10b981", "#f59e0b", "#ef4444"]
+const DATE_FILTERED_REPORTS = new Set(["assignments", "attendance", "incidents", "leaves"])
 
 type ReportRow = Record<string, string | number | boolean | null>
 
@@ -82,42 +85,50 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
   const [reportRows, setReportRows] = useState<ReportRow[]>([])
   const [reportColumns, setReportColumns] = useState<string[]>([])
   const [reportLoading, setReportLoading] = useState(false)
+  const [reportLoaded, setReportLoaded] = useState(false)
+  const [reportError, setReportError] = useState<string | null>(null)
   const [reportSearch, setReportSearch] = useState("")
   const [reportFilter, setReportFilter] = useState("all")
 
   // Site drill-down
   const [selectedSite, setSelectedSite] = useState<string | null>(null)
   const [siteGuards, setSiteGuards] = useState<any[]>([])
+  const [siteError, setSiteError] = useState<string | null>(null)
   const [siteModalOpen, setSiteModalOpen] = useState(false)
   const [loadingSiteGuards, setLoadingSiteGuards] = useState(false)
   const [isExportingSiteData, setIsExportingSiteData] = useState(false)
 
-  const siteData = data.assignmentsBySite.map((item) => ({
-    name: item.site,
-    assignments: Number(item.count),
-  }))
+  const siteData = data.assignmentsBySite
+    .filter((item) => Number(item.count) > 0)
+    .map((item) => ({
+      siteId: item.site_id,
+      name: item.site,
+      assignments: Number(item.count),
+    }))
 
-  const statusData = data.guardsByStatus.map((item) => ({
-    name: item.status.charAt(0).toUpperCase() + item.status.slice(1),
-    value: Number(item.count),
-  }))
+  const statusData = data.guardsByStatus.map((item) => {
+    const status = item.status?.trim() || "Unspecified"
+    return { name: status.charAt(0).toUpperCase() + status.slice(1), value: Number(item.count) }
+  })
 
-  const incidentData = data.incidentsBySeverity.map((item) => ({
-    name: item.severity.charAt(0).toUpperCase() + item.severity.slice(1),
-    value: Number(item.count),
-  }))
+  const incidentData = data.incidentsBySeverity.map((item) => {
+    const severity = item.severity?.trim() || "Unspecified"
+    return { name: severity.charAt(0).toUpperCase() + severity.slice(1), value: Number(item.count) }
+  })
 
-  async function viewSiteDetails(siteName: string) {
+  async function viewSiteDetails(siteId: number, siteName: string) {
     setSelectedSite(siteName)
+    setSiteGuards([])
+    setSiteError(null)
     setLoadingSiteGuards(true)
     try {
-      const res = await fetch(`/api/sites/by-name/${encodeURIComponent(siteName)}/guards`)
-      if (res.ok) {
-        const data = await res.json()
-        setSiteGuards(data.guards || [])
-      }
-    } catch (e) {
-      console.error("Failed to fetch site guards:", e)
+      const res = await fetch(`/api/sites/by-name/${siteId}/guards`)
+      if (!res.ok) throw new Error(`Site detail request failed (${res.status})`)
+      const result = await res.json()
+      setSiteGuards(Array.isArray(result.guards) ? result.guards : [])
+    } catch (error) {
+      console.error("Failed to fetch site guards:", error)
+      setSiteError("Unable to load assigned guards for this site.")
     } finally {
       setLoadingSiteGuards(false)
       setSiteModalOpen(true)
@@ -129,21 +140,19 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
     setIsExportingSiteData(true)
     try {
       // Create CSV content
-      const headers = ["Guard Name", "ID Number", "Phone", "Email", "Status", "Assignment Period"]
+      const headers = ["Guard Name", "ID Number", "Phone", "Email", "Status", "Assignment Date"]
       const rows = siteGuards.map((guard) => [
         guard.guard_name,
         guard.id_number || "N/A",
         guard.phone || "N/A",
         guard.email || "N/A",
         guard.status,
-        guard.date_from && guard.date_to
-          ? `${new Date(guard.date_from).toLocaleDateString()} - ${new Date(guard.date_to).toLocaleDateString()}`
-          : "N/A",
+        guard.date_from ? new Date(guard.date_from).toLocaleDateString() : "N/A",
       ])
 
       const csvContent = [
         headers.join(","),
-        ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+        ...rows.map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")),
       ].join("\n")
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
@@ -164,19 +173,27 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
 
   async function viewReport(reportType: string) {
     setReportLoading(true)
+    setReportLoaded(false)
+    setReportError(null)
+    setReportRows([])
+    setReportColumns([])
     setViewingReport(reportType)
     setReportSearch("")
     setReportFilter("all")
     try {
       const res = await fetch(`/api/reports/data?type=${reportType}&from=${dateFrom}&to=${dateTo}`)
-      if (res.ok) {
-        const result = await res.json()
-        setReportRows(result.rows || [])
-        setReportColumns(result.columns || [])
+      if (!res.ok) throw new Error(`Report request failed (${res.status})`)
+      const result = await res.json()
+      if (!Array.isArray(result.rows) || !Array.isArray(result.columns)) {
+        throw new Error("Report response did not contain row and column data")
       }
+      setReportRows(result.rows)
+      setReportColumns(result.columns)
     } catch (error) {
       console.error("Error fetching report:", error)
+      setReportError("Unable to load this report. Please try again.")
     } finally {
+      setReportLoaded(true)
       setReportLoading(false)
     }
   }
@@ -190,7 +207,9 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement("a")
         a.href = url
-        a.download = `${reportType}-report-${dateFrom}-to-${dateTo}.csv`
+        a.download = DATE_FILTERED_REPORTS.has(reportType)
+          ? `${reportType}-report-${dateFrom}-to-${dateTo}.csv`
+          : `${reportType}-report-${new Date().toISOString().split("T")[0]}.csv`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
@@ -317,7 +336,7 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
             <Card>
               <CardHeader>
                 <CardTitle>Assignments by Site</CardTitle>
-                <CardDescription>Click on a site to view assigned guards</CardDescription>
+                <CardDescription>Recorded assignments this month; click a site to view its assigned guards</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
@@ -325,19 +344,19 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={siteData} onClick={(state) => {
                         if (state?.activeTooltipIndex !== undefined) {
-                          const siteName = siteData[state.activeTooltipIndex]?.name
-                          if (siteName) viewSiteDetails(siteName)
+                          const site = siteData[state.activeTooltipIndex]
+                          if (site) viewSiteDetails(site.siteId, site.name)
                         }
                       }}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                         <XAxis dataKey="name" className="text-xs cursor-pointer" />
                         <YAxis className="text-xs" />
                         <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} cursor={{ fill: "rgba(0,0,0,0.1)" }} />
-                        <Bar dataKey="assignments" fill="#1e40af" radius={[4, 4, 0, 0]} onClick={(data) => viewSiteDetails(data.payload?.name)} style={{ cursor: "pointer" }} />
+                        <Bar dataKey="assignments" fill="#1e40af" radius={[4, 4, 0, 0]} onClick={(data) => viewSiteDetails(data.payload?.siteId, data.payload?.name)} style={{ cursor: "pointer" }} />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground">No assignment data</div>
+                    <div className="flex h-full items-center justify-center text-center text-muted-foreground">No assignments are recorded for active sites this month.</div>
                   )}
                 </div>
               </CardContent>
@@ -413,7 +432,10 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>{reportLabels[viewingReport]}</CardTitle>
-                    <CardDescription>{filteredRows.length} records found ({dateFrom} to {dateTo})</CardDescription>
+                    <CardDescription>
+                      {filteredRows.length} records found
+                      {DATE_FILTERED_REPORTS.has(viewingReport) ? ` (${dateFrom} to ${dateTo})` : " (current system data)"}
+                    </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => downloadReport(viewingReport)} disabled={loading === viewingReport}>
@@ -445,6 +467,8 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
                 </div>
                 {reportLoading ? (
                   <div className="flex h-32 items-center justify-center text-muted-foreground">Loading report data...</div>
+                ) : reportError ? (
+                  <div role="alert" className="flex h-32 items-center justify-center text-destructive">{reportError}</div>
                 ) : reportColumns.length > 0 ? (
                   <div className="rounded-md border overflow-auto max-h-[500px]">
                     <Table>
@@ -478,8 +502,10 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
                       </TableBody>
                     </Table>
                   </div>
+                ) : reportLoaded ? (
+                  <div className="flex h-32 items-center justify-center text-muted-foreground">No records are stored for this report.</div>
                 ) : (
-                  <div className="flex h-32 items-center justify-center text-muted-foreground">Select a report type above to view data</div>
+                  <div className="flex h-32 items-center justify-center text-muted-foreground">Select a report type above to view data.</div>
                 )}
               </CardContent>
             </Card>
@@ -526,7 +552,7 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
           <Card>
             <CardHeader>
               <CardTitle>Export Reports as CSV</CardTitle>
-              <CardDescription>Download reports for the selected date range</CardDescription>
+              <CardDescription>Exports current system records; dated reports use the selected date range.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -535,7 +561,7 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
                     <Download className="mr-3 h-4 w-4 shrink-0" />
                     <div className="text-left">
                       <p className="font-medium capitalize">{type} Report</p>
-                      <p className="text-xs text-muted-foreground">{dateFrom} to {dateTo}</p>
+                      <p className="text-xs text-muted-foreground">{DATE_FILTERED_REPORTS.has(type) ? `${dateFrom} to ${dateTo}` : "Current system data"}</p>
                     </div>
                   </Button>
                 ))}
@@ -550,15 +576,17 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl">{selectedSite}</DialogTitle>
-            <DialogDescription>All guards assigned to this site</DialogDescription>
+            <DialogDescription>Guards with recorded assignments for this site</DialogDescription>
           </DialogHeader>
 
           {loadingSiteGuards ? (
             <div className="flex h-32 items-center justify-center">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
             </div>
+          ) : siteError ? (
+            <div role="alert" className="py-8 text-center text-destructive">{siteError}</div>
           ) : siteGuards.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">No guards currently assigned to this site.</div>
+            <div className="py-8 text-center text-muted-foreground">No assignment records found for this site.</div>
           ) : (
             <div className="rounded-md border">
               <Table>
@@ -569,7 +597,7 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
                     <TableHead>Phone</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Assignment Period</TableHead>
+                    <TableHead>Assignment Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -581,9 +609,7 @@ export function ReportsDashboard({ data }: ReportsDashboardProps) {
                       <TableCell className="text-sm">{guard.email || "N/A"}</TableCell>
                       <TableCell><Badge variant="outline" className="capitalize">{guard.status}</Badge></TableCell>
                       <TableCell className="text-sm">
-                        {guard.date_from && guard.date_to ? (
-                          `${new Date(guard.date_from).toLocaleDateString()} - ${new Date(guard.date_to).toLocaleDateString()}`
-                        ) : "N/A"}
+                        {guard.date_from ? new Date(guard.date_from).toLocaleDateString() : "N/A"}
                       </TableCell>
                     </TableRow>
                   ))}
