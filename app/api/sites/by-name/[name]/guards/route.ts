@@ -1,3 +1,4 @@
+import { getReportAccessResponse } from "@/lib/auth"
 import { sql } from "@/lib/db"
 import { NextResponse } from "next/server"
 
@@ -5,20 +6,22 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ name: string }> }
 ) {
+  const accessResponse = await getReportAccessResponse()
+  if (accessResponse) return accessResponse
+
   try {
     const { name } = await params
     const decodedName = decodeURIComponent(name)
-
-    // Get site ID by name
-    const site = await sql`
-      SELECT id FROM sites WHERE name = ${decodedName}
-    `
+    const requestedSiteId = Number(decodedName)
+    const site = (Number.isSafeInteger(requestedSiteId) && requestedSiteId > 0
+      ? await sql`SELECT id FROM sites WHERE id = ${requestedSiteId}`
+      : await sql`SELECT id FROM sites WHERE name = ${decodedName} ORDER BY id LIMIT 1`) as Array<{ id: number }>
 
     if (site.length === 0) {
       return NextResponse.json({ error: "Site not found" }, { status: 404 })
     }
 
-    const siteId = site[0].id
+    const resolvedSiteId = site[0].id
 
     // Get all guards assigned to this site
     const guards = await sql`
@@ -30,12 +33,12 @@ export async function GET(
         g.phone,
         g.email,
         g.status,
-        a.date_from,
-        a.date_to
+        a.date AS date_from,
+        a.date AS date_to
       FROM guards g
       INNER JOIN assignments a ON g.id = a.guard_id
-      WHERE a.site_id = ${siteId}
-      ORDER BY g.first_name, g.last_name`
+      WHERE a.site_id = ${resolvedSiteId}
+      ORDER BY g.first_name, g.last_name` as Array<Record<string, any>>
 
     const formattedGuards = guards.map((row: any) => ({
       id: row.id,

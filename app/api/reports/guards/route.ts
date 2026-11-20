@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
-import { getSession } from "@/lib/auth"
+import { getReportAccessResponse } from "@/lib/auth"
 
 export async function GET() {
+  const accessResponse = await getReportAccessResponse()
+  if (accessResponse) return accessResponse
+
   try {
     const guards = await sql`
       SELECT 

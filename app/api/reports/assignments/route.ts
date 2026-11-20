@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
-import { getSession } from "@/lib/auth"
+import { getReportAccessResponse } from "@/lib/auth"
 
 export async function GET(request: Request) {
+  const accessResponse = await getReportAccessResponse()
+  if (accessResponse) return accessResponse
+
   try {
     const { searchParams } = new URL(request.url)
     const from = searchParams.get("from")
@@ -60,7 +63,7 @@ export async function GET(request: Request) {
 
     const csv = [
       headers.join(","),
-      ...rows.map(row => row.map(cell => `"${cell || ""}"`).join(","))
+      ...rows.map(row => row.map(cell => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
     ].join("\n")
 
     return new NextResponse(csv, {

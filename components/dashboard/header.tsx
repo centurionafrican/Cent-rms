@@ -67,6 +67,8 @@ export function DashboardHeader({ user }: HeaderProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const displayName = `${user.first_name?.trim() || ""} ${user.last_name?.trim() || ""}`.trim() || user.email
+  const userInitial = displayName.trim().charAt(0).toUpperCase()
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" })
@@ -144,7 +146,7 @@ export function DashboardHeader({ user }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">
-                {user.first_name?.charAt(0) || "A"}
+                {userInitial}
               </div>
               <span className="hidden md:inline-block">{user.first_name} {user.last_name}</span>
             </Button>

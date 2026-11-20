@@ -1,7 +1,11 @@
+import { getReportAccessResponse } from "@/lib/auth"
 import { sql } from "@/lib/db"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
+  const accessResponse = await getReportAccessResponse()
+  if (accessResponse) return accessResponse
+
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get("type") || "guards"
@@ -14,7 +18,12 @@ export async function GET(request: Request) {
       let guards
       if (status) {
         guards = await sql`
-          SELECT g.*, 
+          SELECT
+            g.id, g.guard_code, g.first_name, g.last_name, g.email, g.phone, g.address,
+            g.gender, g.id_number, g.title, g.guard_title, g.status, g.employment_status,
+            g.date_joined, g.education_level, g.discipline, g.languages_spoken,
+            g.special_skills, g.maternity_status, g.annual_leave_days, g.leave_days_used,
+            g.created_at, g.updated_at,
             (SELECT COUNT(*) FROM assignments a WHERE a.guard_id = g.id AND a.date >= CURRENT_DATE) as upcoming_assignments,
             (SELECT COUNT(*) FROM leave_requests lr WHERE lr.guard_id = g.id AND lr.status = 'approved') as approved_leaves
           FROM guards g 
@@ -23,7 +32,12 @@ export async function GET(request: Request) {
         `
       } else {
         guards = await sql`
-          SELECT g.*, 
+          SELECT
+            g.id, g.guard_code, g.first_name, g.last_name, g.email, g.phone, g.address,
+            g.gender, g.id_number, g.title, g.guard_title, g.status, g.employment_status,
+            g.date_joined, g.education_level, g.discipline, g.languages_spoken,
+            g.special_skills, g.maternity_status, g.annual_leave_days, g.leave_days_used,
+            g.created_at, g.updated_at,
             (SELECT COUNT(*) FROM assignments a WHERE a.guard_id = g.id AND a.date >= CURRENT_DATE) as upcoming_assignments,
             (SELECT COUNT(*) FROM leave_requests lr WHERE lr.guard_id = g.id AND lr.status = 'approved') as approved_leaves
           FROM guards g 
@@ -149,8 +163,8 @@ export async function GET(request: Request) {
             g.first_name || ' ' || g.last_name as guard_name
           FROM leave_requests lr
           JOIN guards g ON g.id = lr.guard_id
-          WHERE lr.start_date >= ${from}::date
-            AND lr.end_date <= ${to}::date
+          WHERE lr.start_date <= ${to}::date
+            AND lr.end_date >= ${from}::date
             AND lr.status = ${status}
           ORDER BY lr.created_at DESC
         `
@@ -161,8 +175,8 @@ export async function GET(request: Request) {
             g.first_name || ' ' || g.last_name as guard_name
           FROM leave_requests lr
           JOIN guards g ON g.id = lr.guard_id
-          WHERE lr.start_date >= ${from}::date
-            AND lr.end_date <= ${to}::date
+          WHERE lr.start_date <= ${to}::date
+            AND lr.end_date >= ${from}::date
           ORDER BY lr.created_at DESC
         `
       } else if (status) {
