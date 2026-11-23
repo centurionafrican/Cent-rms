@@ -1,6 +1,6 @@
-import { neon } from "@neondatabase/serverless"
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless"
 
-let _sql: ReturnType<typeof neon> | null = null
+let _sql: NeonQueryFunction<false, false> | null = null
 
 export async function sql(strings: TemplateStringsArray, ...values: unknown[]) {
   if (!_sql) {

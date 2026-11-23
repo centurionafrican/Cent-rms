@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import useSWR from "swr"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
@@ -27,33 +28,32 @@ interface ReportAnalyticsProps {
 
 const COLORS = ["#1e40af", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"]
 
+async function analyticsFetcher(url: string) {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`Analytics request failed (${response.status})`)
+  return response.json()
+}
+
+function AnalyticsError({ message }: { message: string }) {
+  return <div role="alert" className="py-4 text-center text-destructive">{message}</div>
+}
+
 export function GuardAnalytics({ dateFrom, dateTo }: ReportAnalyticsProps) {
-  const [data, setData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { data, error, isLoading } = useSWR(
+    `/api/reports/analytics?type=guard_analytics&from=${dateFrom}&to=${dateTo}`,
+    analyticsFetcher,
+  )
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        const res = await fetch(`/api/reports/analytics?type=guard_analytics&from=${dateFrom}&to=${dateTo}`)
-        const result = await res.json()
-        setData(result)
-      } catch (error) {
-        console.error("Error fetching guard analytics:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
+  if (isLoading) return <div className="py-4 text-center">Loading analytics...</div>
+  if (error) return <AnalyticsError message="Unable to load attendance analytics. Please try again." />
+  if (!data) return <div className="py-4 text-center text-muted-foreground">No attendance data available.</div>
 
-    fetchAnalytics()
-  }, [dateFrom, dateTo])
-
-  if (loading) return <div className="text-center py-4">Loading analytics...</div>
-  if (!data) return <div className="text-center py-4 text-muted-foreground">No data available</div>
-
-  const summaryData = [
-    { name: "Present", value: data.summary.present, color: "#10b981" },
-    { name: "Absent", value: data.summary.absent, color: "#ef4444" },
-  ]
+  const hasAttendance = Array.isArray(data.status) && data.status.length > 0
+  const summaryData: Array<{ name: string; value: number; color: string }> = (data.status || []).map((item: any, index: number) => ({
+    name: item.status,
+    value: Number(item.count),
+    color: COLORS[index % COLORS.length],
+  }))
 
   return (
     <div className="space-y-6">
@@ -84,27 +84,31 @@ export function GuardAnalytics({ dateFrom, dateTo }: ReportAnalyticsProps) {
           <CardDescription>Distribution of attendance status</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={summaryData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {summaryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          {hasAttendance ? (
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={summaryData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value }) => `${name}: ${value}`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {summaryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="flex h-[300px] items-center justify-center text-center text-muted-foreground">No attendance records in the selected date range.</div>
+          )}
         </CardContent>
       </Card>
 
@@ -114,19 +118,23 @@ export function GuardAnalytics({ dateFrom, dateTo }: ReportAnalyticsProps) {
           <CardDescription>Attendance pattern over time</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.trend || []}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="date" className="text-xs" />
-                <YAxis className="text-xs" />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="present" stroke="#10b981" name="Present" />
-                <Line type="monotone" dataKey="absent" stroke="#ef4444" name="Absent" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {data.trend?.length > 0 ? (
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data.trend}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="date" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="present" stroke="#10b981" name="Present" />
+                  <Line type="monotone" dataKey="absent" stroke="#ef4444" name="Absent" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="flex h-[300px] items-center justify-center text-center text-muted-foreground">No attendance records in the selected date range.</div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -134,114 +142,104 @@ export function GuardAnalytics({ dateFrom, dateTo }: ReportAnalyticsProps) {
 }
 
 export function SiteAnalytics({ dateFrom, dateTo }: ReportAnalyticsProps) {
-  const [data, setData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
   const [selectedSite, setSelectedSite] = useState<any>(null)
+  const { data, error, isLoading } = useSWR(
+    `/api/reports/analytics?type=site_analytics&from=${dateFrom}&to=${dateTo}`,
+    analyticsFetcher,
+  )
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        const res = await fetch(`/api/reports/analytics?type=site_analytics&from=${dateFrom}&to=${dateTo}`)
-        const result = await res.json()
-        setData(result)
-      } catch (error) {
-        console.error("Error fetching site analytics:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
+  if (isLoading) return <div className="py-4 text-center">Loading analytics...</div>
+  if (error) return <AnalyticsError message="Unable to load site analytics. Please try again." />
+  if (!data?.sites?.length) return <div className="py-4 text-center text-muted-foreground">No active sites found in the system.</div>
 
-    fetchAnalytics()
-  }, [dateFrom, dateTo])
-
-  if (loading) return <div className="text-center py-4">Loading analytics...</div>
-  if (!data?.sites?.length) return <div className="text-center py-4 text-muted-foreground">No site data available</div>
-
-  const topSite = data.sites[0]
-  const totalGuards = data.sites.reduce((sum: number, s: any) => sum + (s.total_guards || 0), 0)
-  const totalIncidents = data.sites.reduce((sum: number, s: any) => sum + (s.open_incidents || 0), 0)
+  const summary = data.summary
+  const hasSiteActivity = Number(summary?.assigned_guards ?? 0) > 0 || Number(summary?.open_incidents ?? 0) > 0
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Guards Assigned</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{totalGuards}</div>
-            <p className="text-xs text-muted-foreground mt-1">Across all sites</p>
-          </CardContent>
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Active Sites</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold">{summary.active_sites}</div></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Top Site by Guards</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{topSite?.name}</div>
-            <p className="text-xs text-muted-foreground mt-1">{topSite?.total_guards} guards assigned</p>
-          </CardContent>
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Guards Needed</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold">{summary.guards_needed}</div><p className="mt-1 text-xs text-muted-foreground">From site staffing requirements</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Open Incidents</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-orange-600">{totalIncidents}</div>
-            <p className="text-xs text-muted-foreground mt-1">Requiring attention</p>
-          </CardContent>
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Active Guards</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold">{summary.active_guards}</div><p className="mt-1 text-xs text-muted-foreground">From the guard roster</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Guards Assigned</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold">{summary.assigned_guards}</div><p className="mt-1 text-xs text-muted-foreground">Unique guards in the selected date range</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Open Incidents</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold text-orange-600">{summary.open_incidents}</div><p className="mt-1 text-xs text-muted-foreground">In the selected date range</p></CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Sites Overview</CardTitle>
-          <CardDescription>Guards assigned and incidents by site</CardDescription>
+          <CardTitle>Site Staffing</CardTitle>
+          <CardDescription>
+            {Number(summary.assigned_guards) > 0
+              ? "System-recorded guard requirements compared with assignments in the selected date range"
+              : "Showing recorded guard requirements; no assignments exist in the selected date range."}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.sites}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="name" className="text-xs" />
-                <YAxis className="text-xs" />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="total_guards" fill="#1e40af" name="Guards" />
-                <Bar dataKey="upcoming_assignments" fill="#10b981" name="Upcoming" />
-                <Bar dataKey="open_incidents" fill="#ef4444" name="Incidents" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {data.sites.some((site: any) => site.guards_needed !== null || Number(site.assigned_guards) > 0) ? (
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.sites}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="name" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="guards_needed" fill="#1e40af" name="Guards Needed" />
+                  {Number(summary.assigned_guards) > 0 && <Bar dataKey="assigned_guards" fill="#10b981" name="Guards Assigned" />}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="flex h-32 items-center justify-center text-center text-muted-foreground">No staffing requirements or assignments are recorded for these sites.</div>
+          )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
           <CardTitle>Detailed Site Information</CardTitle>
+          <CardDescription>{hasSiteActivity ? "Site records for the selected date range" : "No assignments or incidents are recorded in the selected date range; site requirements and guard roster counts are shown."}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {data.sites.map((site: any) => (
-              <div
+              <button
                 key={site.id}
-                className="p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                type="button"
+                className="w-full rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
                 onClick={() => setSelectedSite(site)}
+                aria-label={`View ${site.name} analytics details`}
               >
-                <div className="flex justify-between items-start">
+                <div className="flex items-start justify-between gap-4">
                   <div>
                     <h4 className="font-semibold">{site.name}</h4>
                     <p className="text-sm text-muted-foreground">
-                      {site.total_guards} guards • {site.upcoming_assignments} upcoming • {site.open_incidents} incidents
+                      {site.guards_needed == null ? "Guard requirement not specified" : `${site.guards_needed} guards needed`}
+                      {Number(site.assigned_guards) > 0 && ` • ${site.assigned_guards} assigned`}
+                      {Number(site.upcoming_assignments) > 0 && ` • ${site.upcoming_assignments} upcoming`}
+                      {Number(site.open_incidents) > 0 && ` • ${site.open_incidents} incidents`}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <Badge variant={site.open_incidents > 0 ? "destructive" : "default"}>
-                      {site.open_incidents} Issues
-                    </Badge>
-                  </div>
+                  <Badge variant={Number(site.open_incidents) > 0 ? "destructive" : "secondary"}>
+                    {site.open_incidents} open
+                  </Badge>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </CardContent>
@@ -252,41 +250,31 @@ export function SiteAnalytics({ dateFrom, dateTo }: ReportAnalyticsProps) {
           <DialogHeader>
             <DialogTitle>{selectedSite?.name} - Details</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Total Guards</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{selectedSite?.total_guards}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Upcoming Assignments</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{selectedSite?.upcoming_assignments}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Open Incidents</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">{selectedSite?.open_incidents}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Avg Hours/Day</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{(selectedSite?.avg_hours_worked || 0).toFixed(1)}h</div>
-                </CardContent>
-              </Card>
-            </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Guards Needed</CardTitle></CardHeader>
+              <CardContent><div className="text-2xl font-bold">{selectedSite?.guards_needed ?? "Not specified"}</div></CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Guards Assigned</CardTitle></CardHeader>
+              <CardContent><div className="text-2xl font-bold">{selectedSite?.assigned_guards}</div></CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Upcoming Assignments</CardTitle></CardHeader>
+              <CardContent><div className="text-2xl font-bold">{selectedSite?.upcoming_assignments}</div></CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Open Incidents</CardTitle></CardHeader>
+              <CardContent><div className="text-2xl font-bold text-orange-600">{selectedSite?.open_incidents}</div></CardContent>
+            </Card>
+            <Card className="col-span-2">
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Average Hours Worked</CardTitle></CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {selectedSite?.avg_hours_worked == null ? "No attendance records" : `${Number(selectedSite.avg_hours_worked).toFixed(1)}h`}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </DialogContent>
       </Dialog>
@@ -295,27 +283,17 @@ export function SiteAnalytics({ dateFrom, dateTo }: ReportAnalyticsProps) {
 }
 
 export function IncidentAnalytics({ dateFrom, dateTo }: ReportAnalyticsProps) {
-  const [data, setData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { data, error, isLoading } = useSWR(
+    `/api/reports/analytics?type=incident_analytics&from=${dateFrom}&to=${dateTo}`,
+    analyticsFetcher,
+  )
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        const res = await fetch(`/api/reports/analytics?type=incident_analytics&from=${dateFrom}&to=${dateTo}`)
-        const result = await res.json()
-        setData(result)
-      } catch (error) {
-        console.error("Error fetching incident analytics:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchAnalytics()
-  }, [dateFrom, dateTo])
-
-  if (loading) return <div className="text-center py-4">Loading analytics...</div>
-  if (!data) return <div className="text-center py-4 text-muted-foreground">No incident data available</div>
+  if (isLoading) return <div className="py-4 text-center">Loading analytics...</div>
+  if (error) return <AnalyticsError message="Unable to load incident analytics. Please try again." />
+  if (!data) return <div className="py-4 text-center text-muted-foreground">No incident data available.</div>
+  if (!data.severity?.length && !data.status?.length && !data.trend?.length) {
+    return <div className="py-8 text-center text-muted-foreground">No incidents recorded in the selected date range.</div>
+  }
 
   return (
     <div className="space-y-6">
@@ -390,33 +368,21 @@ export function IncidentAnalytics({ dateFrom, dateTo }: ReportAnalyticsProps) {
 }
 
 export function LeaveAnalytics({ dateFrom, dateTo }: ReportAnalyticsProps) {
-  const [data, setData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { data, error, isLoading } = useSWR(
+    `/api/reports/analytics?type=leave_analytics&from=${dateFrom}&to=${dateTo}`,
+    analyticsFetcher,
+  )
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        const res = await fetch(`/api/reports/analytics?type=leave_analytics&from=${dateFrom}&to=${dateTo}`)
-        const result = await res.json()
-        setData(result)
-      } catch (error) {
-        console.error("Error fetching leave analytics:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
+  if (isLoading) return <div className="py-4 text-center">Loading analytics...</div>
+  if (error) return <AnalyticsError message="Unable to load leave analytics. Please try again." />
+  if (!data) return <div className="py-4 text-center text-muted-foreground">No leave data available.</div>
+  if (!data.status?.length) return <div className="py-8 text-center text-muted-foreground">No leave requests overlap the selected date range.</div>
 
-    fetchAnalytics()
-  }, [dateFrom, dateTo])
-
-  if (loading) return <div className="text-center py-4">Loading analytics...</div>
-  if (!data) return <div className="text-center py-4 text-muted-foreground">No leave data available</div>
-
-  const statusData = [
-    { name: "Approved", value: data.summary.approved, color: "#10b981" },
-    { name: "Pending", value: data.summary.pending, color: "#f59e0b" },
-    { name: "Rejected", value: data.summary.rejected, color: "#ef4444" },
-  ]
+  const statusData: Array<{ name: string; value: number; color: string }> = data.status.map((item: any, index: number) => ({
+    name: item.status,
+    value: Number(item.count),
+    color: COLORS[index % COLORS.length],
+  }))
 
   return (
     <div className="space-y-6">
