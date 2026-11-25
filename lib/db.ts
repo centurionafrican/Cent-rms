@@ -96,6 +96,9 @@ export const ROLE_ACCESS: Record<string, string[]> = {
   ],
   roster_manager: [
     "/dashboard",
+    "/dashboard/clients",
+    "/dashboard/guards",
+    "/dashboard/sites",
     "/dashboard/assignments",
     "/dashboard/assignment-change-requests",
     "/dashboard/guard-offs",

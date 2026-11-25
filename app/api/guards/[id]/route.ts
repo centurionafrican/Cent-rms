@@ -28,7 +28,7 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { first_name, last_name, email, phone, address, title, status, guard_code, id_number, annual_leave_days, date_joined, guard_title, gender, education_level, languages_spoken, discipline, special_skills, maternity_status, bank_name, account_number } = body
+    const { first_name, last_name, email, phone, address, title, status, guard_code, id_number, annual_leave_days, date_joined, guard_title, gender, education_level, languages_spoken, discipline, special_skills, maternity_status, bank_name, account_number, attachments } = body
     const normalizedStatus = typeof status === "string" ? status.trim().toLowerCase() : "active"
     const validStatuses = ["recruitment", "training", "probation", "active", "retired", "quit", "abandon", "resigned", "dismissed", "deceased"]
 
@@ -67,6 +67,7 @@ export async function PUT(
         maternity_status = ${gender === 'Female' ? maternity_status || 'Not Applicable' : 'Not Applicable'},
         bank_name = ${bank_name || null},
         account_number = ${account_number || null},
+        attachments = ${attachments || null},
         updated_at = NOW()
       WHERE id = ${id}
       RETURNING *
