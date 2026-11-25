@@ -53,6 +53,18 @@ export async function POST(request: Request) {
     return NextResponse.json(result[0], { status: 201 })
   } catch (error) {
     console.error("Error creating guard:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+
+    if (error && typeof error === "object" && "code" in error && error.code === "23505") {
+      const constraint = "constraint" in error && typeof error.constraint === "string" ? error.constraint : ""
+      const message = constraint.includes("id_number")
+        ? "A guard with this national ID number already exists. Check the guard list instead of creating a duplicate."
+        : constraint.includes("guard_code")
+          ? "This guard code is already assigned to another guard."
+          : "A guard with one of the submitted unique values already exists. Check the guard list and review the form values."
+
+      return NextResponse.json({ error: message }, { status: 409 })
+    }
+
+    return NextResponse.json({ error: "Unable to save this guard because of a server or database error. Please try again, and contact support if it continues." }, { status: 500 })
   }
 }
