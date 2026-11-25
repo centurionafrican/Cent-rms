@@ -35,6 +35,15 @@ export async function POST(request: Request) {
       }
     }
 
+    if (id_number && String(id_number).trim()) {
+      const duplicateIdNumber = await sql`
+        SELECT id FROM guards WHERE id_number = ${String(id_number).trim()} LIMIT 1
+      `
+      if (duplicateIdNumber.length > 0) {
+        return NextResponse.json({ error: "A guard with this national ID number already exists. Check the guard list instead of creating a duplicate." }, { status: 409 })
+      }
+    }
+
     const result = await sql`
       INSERT INTO guards (first_name, last_name, email, phone, address, title, status, guard_code, id_number, annual_leave_days, date_joined, hire_date, guard_title, gender, education_level, languages_spoken, discipline, special_skills, maternity_status, bank_name, account_number, attachments)
       VALUES (${first_name}, ${last_name}, ${email || null}, ${phone || null}, ${address || null}, ${title || 'Security Guard'}, ${status || 'recruitment'}, ${guard_code || null}, ${id_number || null}, ${annual_leave_days ?? 21}, ${date_joined || new Date().toISOString().split('T')[0]}, ${new Date().toISOString().split('T')[0]}, ${guard_title || null}, ${gender || null}, ${education_level || null}, ${languages_spoken || null}, ${discipline || 'Excellent'}, ${special_skills || null}, ${gender === 'Female' ? maternity_status || 'Not Applicable' : 'Not Applicable'}, ${bank_name || null}, ${account_number || null}, ${attachments || null})
