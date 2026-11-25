@@ -119,8 +119,18 @@ export default function GuardsPage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...formData, annual_leave_days: Number.parseInt(formData.annual_leave_days) || 21, attachments: JSON.stringify(allAttachments) }),
       })
-      if (res.ok) { setIsCreateOpen(false); resetForm(); fetchGuards() }
-    } catch (error) { console.error(error) }
+      if (res.ok) {
+        setIsCreateOpen(false)
+        resetForm()
+        await fetchGuards()
+      } else {
+        const result = await res.json().catch(() => null)
+        alert(result?.error || "Unable to create guard.")
+      }
+    } catch (error) {
+      console.error("Failed to create guard:", error)
+      alert("Unable to create guard. Please try again.")
+    }
     finally { setSaving(false) }
   }
 
